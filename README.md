@@ -5,6 +5,8 @@
 Start a local server to host the page:
 
 ```
+cd PATH_OF_5411PROJ
+
 python -m SimpleHTTPServer
 ```
 
