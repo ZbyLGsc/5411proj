@@ -4,11 +4,17 @@ import Stats from '../libs/three.js/examples/jsm/libs/stats.module.js';
 
 import { OrbitControls } from '../libs/three.js/examples/jsm/controls/OrbitControls.js';
 
+import * as GEN from './generate.js';
+
 // Graphics variables
 var container, stats;
 var camera, controls, scene, renderer;
 var textureLoader;
 var clock = new THREE.Clock();
+
+var mouseCoords = new THREE.Vector2();
+var raycaster = new THREE.Raycaster();
+var ballMaterial = new THREE.MeshPhongMaterial({ color: 0x202020 });
 
 // Physics variables
 var gravityConstant = - 9.8;
@@ -26,6 +32,7 @@ var cloth;
 var transformAux1;
 
 var armMovement = 0;
+
 
 Ammo().then(function (AmmoLib) {
 
@@ -145,7 +152,7 @@ function createObjects() {
   var brickLength = 1.2;
   var brickDepth = 0.6;
   var brickHeight = brickLength * 0.5;
-  var numBricksLength = 10;
+  var numBricksLength = 8;
   var numBricksHeight = 8;
   var z0 = - numBricksLength * brickLength * 0.5;
   pos.set(0, brickHeight * 0.5, z0);
@@ -356,10 +363,26 @@ function createParalellepiped(sx, sy, sz, mass, pos, quat, material) {
 
 }
 
-function createRigidBody(threeObject, physicsShape, mass, pos, quat) {
+function createRigidBody(object, physicsShape, mass, pos, quat, vel, angVel) {
 
-  threeObject.position.copy(pos);
-  threeObject.quaternion.copy(quat);
+  if (pos) {
+
+    object.position.copy(pos);
+
+  } else {
+
+    pos = object.position;
+
+  }
+  if (quat) {
+
+    object.quaternion.copy(quat);
+
+  } else {
+
+    quat = object.quaternion;
+
+  }
 
   var transform = new Ammo.btTransform();
   transform.setIdentity();
@@ -373,13 +396,27 @@ function createRigidBody(threeObject, physicsShape, mass, pos, quat) {
   var rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, physicsShape, localInertia);
   var body = new Ammo.btRigidBody(rbInfo);
 
-  threeObject.userData.physicsBody = body;
+  body.setFriction(0.5);
 
-  scene.add(threeObject);
+  if (vel) {
+
+    body.setLinearVelocity(new Ammo.btVector3(vel.x, vel.y, vel.z));
+
+  }
+  if (angVel) {
+
+    body.setAngularVelocity(new Ammo.btVector3(angVel.x, angVel.y, angVel.z));
+
+  }
+
+  object.userData.physicsBody = body;
+  object.userData.collided = false;
+
+  scene.add(object);
 
   if (mass > 0) {
 
-    rigidBodies.push(threeObject);
+    rigidBodies.push(object);
 
     // Disable deactivation
     body.setActivationState(4);
@@ -387,6 +424,8 @@ function createRigidBody(threeObject, physicsShape, mass, pos, quat) {
   }
 
   physicsWorld.addRigidBody(body);
+
+  return body;
 
 }
 
@@ -402,8 +441,85 @@ function createMaterial() {
 
 }
 
+function generateObject() {
+
+  var numTypes = 4;
+  var objectType = Math.ceil(Math.random() * numTypes);
+
+  var threeObject = null;
+  var shape = null;
+
+  var objectSize = 3;
+  var margin = 0.05;
+
+  switch (objectType) {
+
+    case 1:
+      // Sphere
+      var radius = 1 + Math.random() * objectSize;
+      threeObject = new THREE.Mesh(new THREE.SphereBufferGeometry(radius, 20, 20), createMaterial());
+      shape = new Ammo.btSphereShape(radius);
+      shape.setMargin(margin);
+      break;
+    case 2:
+      // Box
+      var sx = 1 + Math.random() * objectSize;
+      var sy = 1 + Math.random() * objectSize;
+      var sz = 1 + Math.random() * objectSize;
+      threeObject = new THREE.Mesh(new THREE.BoxBufferGeometry(sx, sy, sz, 1, 1, 1), createMaterial());
+      shape = new Ammo.btBoxShape(new Ammo.btVector3(sx * 0.5, sy * 0.5, sz * 0.5));
+      shape.setMargin(margin);
+      break;
+    case 3:
+      // Cylinder
+      var radius = 1 + Math.random() * objectSize;
+      var height = 1 + Math.random() * objectSize;
+      threeObject = new THREE.Mesh(new THREE.CylinderBufferGeometry(radius, radius, height, 20, 1), createMaterial());
+      shape = new Ammo.btCylinderShape(new Ammo.btVector3(radius, height * 0.5, radius));
+      shape.setMargin(margin);
+      break;
+    default:
+      // Cone
+      var radius = 1 + Math.random() * objectSize;
+      var height = 2 + Math.random() * objectSize;
+      threeObject = new THREE.Mesh(new THREE.ConeBufferGeometry(radius, height, 20, 2), createMaterial());
+      shape = new Ammo.btConeShape(radius, height);
+      break;
+
+  }
+
+  threeObject.position.set((Math.random() - 0.5) * 30, objectSize + 15, (Math.random() - 0.5) * 30);
+
+  var mass = objectSize * 5;
+  createRigidBody(threeObject, shape, mass, threeObject.position, new THREE.Quaternion(0, 0, 0, 1));
+
+  // var localInertia = new Ammo.btVector3(0, 0, 0);
+  // shape.calculateLocalInertia(mass, localInertia);
+  // var transform = new Ammo.btTransform();
+  // transform.setIdentity();
+  // var pos = threeObject.position;
+  // transform.setOrigin(new Ammo.btVector3(pos.x, pos.y, pos.z));
+  // var motionState = new Ammo.btDefaultMotionState(transform);
+  // var rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, shape, localInertia);
+  // var body = new Ammo.btRigidBody(rbInfo);
+
+  // threeObject.userData.physicsBody = body;
+
+  // threeObject.receiveShadow = true;
+  // threeObject.castShadow = true;
+
+  // scene.add(threeObject);
+  // dynamicObjects.push(threeObject);
+
+  // physicsWorld.addRigidBody(body);
+
+
+
+}
+
 function initInput() {
 
+  // keyboard control of arm
   window.addEventListener('keydown', function (event) {
 
     switch (event.keyCode) {
@@ -418,6 +534,11 @@ function initInput() {
         armMovement = - 1;
         break;
 
+      case 66:
+        generateObject();
+        console.log(GEN.test(rigidBodies));
+        break;
+
     }
 
   }, false);
@@ -428,6 +549,43 @@ function initInput() {
 
   }, false);
 
+  // mouse control of shooting
+  window.addEventListener('mousedown', function (event) {
+
+    // triggered by right button
+    if (event.which != 3) {
+      return;
+    }
+    mouseCoords.set(
+      (event.clientX / window.innerWidth) * 2 - 1,
+      - (event.clientY / window.innerHeight) * 2 + 1
+    );
+
+    raycaster.setFromCamera(mouseCoords, camera);
+
+    // Creates a ball and throws it
+    var ballMass = 35;
+    var ballRadius = 0.4;
+
+    var ball = new THREE.Mesh(new THREE.SphereBufferGeometry(ballRadius, 14, 10), ballMaterial);
+    ball.castShadow = true;
+    ball.receiveShadow = true;
+    var ballShape = new Ammo.btSphereShape(ballRadius);
+    ballShape.setMargin(margin);
+
+    var pos = new THREE.Vector3();
+    var quat = new THREE.Quaternion();
+    pos.copy(raycaster.ray.direction);
+    pos.add(raycaster.ray.origin);
+    quat.set(0, 0, 0, 1);
+    var ballBody = createRigidBody(ball, ballShape, ballMass, pos, quat);
+
+    var vel = new THREE.Vector3();
+    vel.copy(raycaster.ray.direction);
+    vel.multiplyScalar(24);
+    ballBody.setLinearVelocity(new Ammo.btVector3(vel.x, vel.y, vel.z));
+
+  }, false);
 }
 
 function onWindowResize() {
