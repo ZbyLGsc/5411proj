@@ -3,7 +3,7 @@
     "module": "commonjs",
     "target": "es6"
   },
-  "include": ["/home/bzhouai/data/software/graphics/comp5411/index.html","/home/bzhouai/data/software/graphics/three.js/examples/jsm/*", 
-    "/home/bzhouai/data/software/graphics/three.js/build/*", 
-    "/home/bzhouai/data/software/graphics/three.js/examples/js/libs/ammo.js"]
+  "include": ["index.html","three.js/examples/jsm/*", 
+    "three.js/build/*", 
+    "three.js/examples/js/libs/ammo.js"]
 }
