@@ -7,5 +7,6 @@
     "three.js/examples/jsm/*", 
     "three.js/build/*", 
     "three.js/examples/js/libs/ammo.js"
+    
   ]
 }
