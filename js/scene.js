@@ -451,7 +451,7 @@ function generateNewSphere() {
   shape.setMargin(margin);
 
 
-  threeObject.position.set((Math.random() - 0.5) * 30, objectSize + 25, (Math.random() - 0.5) * 30);
+  threeObject.position.set(Math.random() - 0.5, objectSize + 25, Math.random() - 0.5);
 
   var mass = 0.1;
   createRigidBody(threeObject, shape, mass, threeObject.position, new THREE.Quaternion(0, 0, 0, 1));
@@ -528,7 +528,7 @@ function initInput() {
 
     var vel = new THREE.Vector3();
     vel.copy(raycaster.ray.direction);
-    vel.multiplyScalar(24);
+    vel.multiplyScalar(50);
     ballBody.setLinearVelocity(new Ammo.btVector3(vel.x, vel.y, vel.z));
 
   }, false);
