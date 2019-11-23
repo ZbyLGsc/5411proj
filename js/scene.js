@@ -6,15 +6,19 @@ import { OrbitControls } from '../libs/three.js/examples/jsm/controls/OrbitContr
 
 import * as GEN from './generate.js';
 
+import { DDSLoader } from '../libs/three.js/examples/jsm/loaders/DDSLoader.js';
+
 // Graphics variables
 var container, stats;
-var camera, controls, scene, renderer;
+var camera, controls, scene, renderer, cubeCamera, cubeCamera2;
 var textureLoader;
 var clock = new THREE.Clock();
 
 var mouseCoords = new THREE.Vector2();
 var raycaster = new THREE.Raycaster();
 var ballMaterial = new THREE.MeshPhongMaterial({ color: 0x202020 });
+var skyBallMesh;
+var backgroundTexture;
 
 // Physics variables
 var gravityConstant = - 9.8;
@@ -62,9 +66,13 @@ function initGraphics() {
   camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.2, 2000);
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xbfd1e5);
+  // scene.background = new THREE.Color(0xbfd1e5);
+  var r = "textures/cube/Bridge2/";
+  var urls = [r + "posx.jpg", r + "negx.jpg", r + "posy.jpg", r + "negy.jpg", r + "posz.jpg", r + "negz.jpg"];
+  backgroundTexture = new THREE.CubeTextureLoader().load(urls);
+  scene.background = backgroundTexture;
 
-  camera.position.set(-12, 10, 3);
+  camera.position.set(-30, 20, 6);
 
   renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -82,16 +90,16 @@ function initGraphics() {
   scene.add(ambientLight);
 
   var light = new THREE.DirectionalLight(0xffffff, 1);
-  light.position.set(- 10, 10, 5);
+  light.position.set(- 30, 30, 30);
   light.castShadow = true;
-  var d = 10;
+  var d = 30;
   light.shadow.camera.left = - d;
   light.shadow.camera.right = d;
   light.shadow.camera.top = d;
   light.shadow.camera.bottom = - d;
 
-  light.shadow.camera.near = 2;
-  light.shadow.camera.far = 50;
+  light.shadow.camera.near = 1;
+  light.shadow.camera.far = 100;
 
   light.shadow.mapSize.x = 1024;
   light.shadow.mapSize.y = 1024;
@@ -103,7 +111,15 @@ function initGraphics() {
   stats.domElement.style.top = '0px';
   container.appendChild(stats.domElement);
 
-  //
+  // cubeCamera for reflection effect
+
+  cubeCamera = new THREE.CubeCamera(1, 1000, 256);
+  cubeCamera.renderTarget.texture.generateMipmaps = true;
+  cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipmapLinearFilter;
+  // cubeCamera.renderTarget.texture.mapping = THREE.CubeReflectionMapping;
+
+  cubeCamera.position.set(0, 12, 0);
+  scene.add(cubeCamera);
 
   window.addEventListener('resize', onWindowResize, false);
 
@@ -131,90 +147,58 @@ function createObjects() {
   var pos = new THREE.Vector3();
   var quat = new THREE.Quaternion();
 
-  // Ground
+  // Ground and wall =======================================================================
+
+  // Ground 
   pos.set(0, - 0.5, 0);
   quat.set(0, 0, 0, 1);
-  var ground = createParalellepiped(40, 1, 40, 0, pos, quat, new THREE.MeshPhongMaterial({ color: 0xFFFFFF }));
+
+  var loader = new DDSLoader();
+  var groundTexture = loader.load('textures/compressed/disturb_dxt1_mip.dds');
+  groundTexture.anisotropy = 4;
+  groundTexture.wrapS = THREE.RepeatWrapping;
+  groundTexture.wrapT = THREE.RepeatWrapping;
+  groundTexture.repeat.set(2, 2);
+  var material1 = new THREE.MeshBasicMaterial({ map: groundTexture });
+
+  var ground = createParalellepiped(40, 0.9, 40, 0, pos, quat, material1);
   ground.castShadow = true;
   ground.receiveShadow = true;
-  textureLoader.load("textures/grid.png", function (texture) {
-
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(40, 40);
-    ground.material.map = texture;
-    ground.material.needsUpdate = true;
-
-  });
 
   // Wall
-  var brickMass = 0.5;
-  var brickLength = 1.2;
-  var brickDepth = 0.6;
-  var brickHeight = brickLength * 0.5;
-  var numBricksLength = 8;
-  var numBricksHeight = 8;
-  var z0 = - numBricksLength * brickLength * 0.5;
-  pos.set(0, brickHeight * 0.5, z0);
-  quat.set(0, 0, 0, 1);
-  for (var j = 0; j < numBricksHeight; j++) {
+  var baseMaterial = new THREE.MeshPhongMaterial({ color: 0x606060 });
 
-    var oddRow = (j % 2) == 1;
+  var wall1 = createParalellepiped(40, 3, 0.5, 0, new THREE.Vector3(0, 0, -20), quat, baseMaterial);
+  wall1.castShadow = true;
+  wall1.receiveShadow = true;
+  var wall2 = createParalellepiped(40, 3, 0.5, 0, new THREE.Vector3(0, 0, 20), quat, baseMaterial);
+  wall2.castShadow = true;
+  wall2.receiveShadow = true;
+  var wall3 = createParalellepiped(0.5, 3, 40, 0, new THREE.Vector3(20, 0, 0), quat, baseMaterial);
+  wall3.castShadow = true;
+  wall3.receiveShadow = true;
+  var wall4 = createParalellepiped(0.5, 3, 40, 0, new THREE.Vector3(-20, 0, 0), quat, baseMaterial);
+  wall4.castShadow = true;
+  wall4.receiveShadow = true;
 
-    pos.z = z0;
-
-    if (oddRow) {
-
-      pos.z -= 0.25 * brickLength;
-
-    }
-
-    var nRow = oddRow ? numBricksLength + 1 : numBricksLength;
-    for (var i = 0; i < nRow; i++) {
-
-      var brickLengthCurrent = brickLength;
-      var brickMassCurrent = brickMass;
-      if (oddRow && (i == 0 || i == nRow - 1)) {
-
-        brickLengthCurrent *= 0.5;
-        brickMassCurrent *= 0.5;
-
-      }
-
-      var brick = createParalellepiped(brickDepth, brickHeight, brickLengthCurrent, brickMassCurrent, pos, quat, createMaterial());
-      brick.castShadow = true;
-      brick.receiveShadow = true;
-
-      if (oddRow && (i == 0 || i == nRow - 2)) {
-
-        pos.z += 0.75 * brickLength;
-
-      } else {
-
-        pos.z += brickLength;
-
-      }
-
-    }
-    pos.y += brickHeight;
-
-  }
+  // The rope ball =======================================================================
 
   // Ball
   var ballMass = 1.5;
-  var ballRadius = 0.6;
+  var ballRadius = 1.6;
 
-  var ball = new THREE.Mesh(new THREE.SphereBufferGeometry(ballRadius, 20, 20), new THREE.MeshPhongMaterial({ color: 0x202020 }));
+  var material3 = new THREE.MeshBasicMaterial({ color: 0xffffff, envMap: scene.background, refractionRatio: 0.1 });
+  material3.envMap.mapping = THREE.CubeRefractionMapping;
+  var ball = new THREE.Mesh(new THREE.SphereBufferGeometry(ballRadius, 20, 20), material3);
   ball.castShadow = true;
   ball.receiveShadow = true;
   var ballShape = new Ammo.btSphereShape(ballRadius);
   ballShape.setMargin(margin);
-  pos.set(-3, 0.8, 3);
+  pos.set(-3, 0.8, 9);
   quat.set(0, 0, 0, 1);
   createRigidBody(ball, ballShape, ballMass, pos, quat);
   ball.userData.physicsBody.setFriction(0.5);
 
-  // The rope
   // Rope graphic object
   var ropeNumSegments = 10;
   var ropeLength = 4;
@@ -263,13 +247,13 @@ function createObjects() {
   // Disable deactivation
   ropeSoftBody.setActivationState(4);
 
-  // The cloth
+  // The cloth =======================================================================
   // Cloth graphic object
-  var clothWidth = 2.5;
+  var clothWidth = 5;
   var clothHeight = 5;
   var clothNumSegmentsZ = clothWidth * 5;
   var clothNumSegmentsY = clothHeight * 5;
-  var clothPos = new THREE.Vector3(ropePos.x, ropePos.y + ropeLength - 0.5 * clothHeight + 0.1, -2.5);
+  var clothPos = new THREE.Vector3(ropePos.x, ropePos.y + ropeLength - 0.5 * clothHeight + 0.1, -7);
 
   var clothGeometry = new THREE.PlaneBufferGeometry(clothWidth, clothHeight, clothNumSegmentsZ, clothNumSegmentsY);
   clothGeometry.rotateY(Math.PI * 0.5);
@@ -309,11 +293,10 @@ function createObjects() {
   // Disable deactivation
   clothSoftBody.setActivationState(4);
 
-  // The base
+  // The base =======================================================================
   var armMass = 2;
-  var armLength = 10;
+  var armLength = 25;
   var pylonHeight = ropePos.y + ropeLength;
-  var baseMaterial = new THREE.MeshPhongMaterial({ color: 0x606060 });
 
   pos.set(ropePos.x, 0.1, 0);
   quat.set(0, 0, 0, 1);
@@ -348,7 +331,22 @@ function createObjects() {
   hinge = new Ammo.btHingeConstraint(pylon.userData.physicsBody, arm.userData.physicsBody, pivotA, pivotB, axis, axis, true);
   physicsWorld.addConstraint(hinge, true);
 
+  // Sphere in the sky
 
+  var skyBallGeo = new THREE.SphereBufferGeometry(4, 32, 16);
+  var skyBallMat = new THREE.MeshBasicMaterial({ color: 0xffffff, envMap: cubeCamera.renderTarget.texture, refractionRatio: 0.95 });
+
+  skyBallMesh = new THREE.Mesh(skyBallGeo, skyBallMat);
+  skyBallMesh.position.y = 12;
+
+  scene.add(skyBallMesh);
+
+  var skyBallShape = new Ammo.btSphereShape(4);
+  ballShape.setMargin(margin);
+  pos.set(0, 12, 0);
+  quat.set(0, 0, 0, 1);
+  createRigidBody(skyBallMesh, skyBallShape, 0, pos, quat);
+  skyBallMesh.userData.physicsBody.setFriction(0.5);
 }
 
 function createParalellepiped(sx, sy, sz, mass, pos, quat, material) {
@@ -429,91 +427,34 @@ function createRigidBody(object, physicsShape, mass, pos, quat, vel, angVel) {
 
 }
 
-function createRandomColor() {
-
-  return Math.floor(Math.random() * (1 << 24));
-
-}
-
 function createMaterial() {
-
-  return new THREE.MeshPhongMaterial({ color: createRandomColor() });
-
+  return new THREE.MeshPhongMaterial({ color: Math.floor(Math.random() * (1 << 24)) });
 }
 
-function generateObject() {
-
-  var numTypes = 4;
-  var objectType = Math.ceil(Math.random() * numTypes);
+function generateNewSphere() {
 
   var threeObject = null;
   var shape = null;
 
-  var objectSize = 3;
+  var objectSize = 2;
   var margin = 0.05;
 
-  switch (objectType) {
+  // Sphere
+  var radius = 1 + Math.random() * objectSize;
+  // threeObject = new THREE.Mesh(new THREE.SphereBufferGeometry(radius, 20, 20), createMaterial());
 
-    case 1:
-      // Sphere
-      var radius = 1 + Math.random() * objectSize;
-      threeObject = new THREE.Mesh(new THREE.SphereBufferGeometry(radius, 20, 20), createMaterial());
-      shape = new Ammo.btSphereShape(radius);
-      shape.setMargin(margin);
-      break;
-    case 2:
-      // Box
-      var sx = 1 + Math.random() * objectSize;
-      var sy = 1 + Math.random() * objectSize;
-      var sz = 1 + Math.random() * objectSize;
-      threeObject = new THREE.Mesh(new THREE.BoxBufferGeometry(sx, sy, sz, 1, 1, 1), createMaterial());
-      shape = new Ammo.btBoxShape(new Ammo.btVector3(sx * 0.5, sy * 0.5, sz * 0.5));
-      shape.setMargin(margin);
-      break;
-    case 3:
-      // Cylinder
-      var radius = 1 + Math.random() * objectSize;
-      var height = 1 + Math.random() * objectSize;
-      threeObject = new THREE.Mesh(new THREE.CylinderBufferGeometry(radius, radius, height, 20, 1), createMaterial());
-      shape = new Ammo.btCylinderShape(new Ammo.btVector3(radius, height * 0.5, radius));
-      shape.setMargin(margin);
-      break;
-    default:
-      // Cone
-      var radius = 1 + Math.random() * objectSize;
-      var height = 2 + Math.random() * objectSize;
-      threeObject = new THREE.Mesh(new THREE.ConeBufferGeometry(radius, height, 20, 2), createMaterial());
-      shape = new Ammo.btConeShape(radius, height);
-      break;
+  var material = new THREE.MeshBasicMaterial({ color: 0xffffff, envMap: scene.background, refractionRatio: 0.5 });
+  material.envMap.mapping = THREE.CubeRefractionMapping;
 
-  }
+  threeObject = new THREE.Mesh(new THREE.SphereBufferGeometry(radius, 20, 20), material);
+  shape = new Ammo.btSphereShape(radius);
+  shape.setMargin(margin);
 
-  threeObject.position.set((Math.random() - 0.5) * 30, objectSize + 15, (Math.random() - 0.5) * 30);
+
+  threeObject.position.set((Math.random() - 0.5) * 30, objectSize + 25, (Math.random() - 0.5) * 30);
 
   var mass = objectSize * 5;
   createRigidBody(threeObject, shape, mass, threeObject.position, new THREE.Quaternion(0, 0, 0, 1));
-
-  // var localInertia = new Ammo.btVector3(0, 0, 0);
-  // shape.calculateLocalInertia(mass, localInertia);
-  // var transform = new Ammo.btTransform();
-  // transform.setIdentity();
-  // var pos = threeObject.position;
-  // transform.setOrigin(new Ammo.btVector3(pos.x, pos.y, pos.z));
-  // var motionState = new Ammo.btDefaultMotionState(transform);
-  // var rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, shape, localInertia);
-  // var body = new Ammo.btRigidBody(rbInfo);
-
-  // threeObject.userData.physicsBody = body;
-
-  // threeObject.receiveShadow = true;
-  // threeObject.castShadow = true;
-
-  // scene.add(threeObject);
-  // dynamicObjects.push(threeObject);
-
-  // physicsWorld.addRigidBody(body);
-
-
 
 }
 
@@ -534,8 +475,13 @@ function initInput() {
         armMovement = - 1;
         break;
 
-      case 66:
-        generateObject();
+      // S
+      case 83:
+        armMovement = 0;
+        break;
+
+      case 87:
+        generateNewSphere();
         console.log(GEN.test(rigidBodies));
         break;
 
@@ -545,7 +491,7 @@ function initInput() {
 
   window.addEventListener('keyup', function () {
 
-    armMovement = 0;
+    // armMovement = 0;
 
   }, false);
 
@@ -611,6 +557,10 @@ function render() {
   var deltaTime = clock.getDelta();
 
   updatePhysics(deltaTime);
+
+  skyBallMesh.visible = false;
+  cubeCamera.update(renderer, scene);
+  skyBallMesh.visible = true;
 
   renderer.render(scene, camera);
 
