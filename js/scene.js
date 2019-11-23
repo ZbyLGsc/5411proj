@@ -168,16 +168,16 @@ function createObjects() {
   // Wall
   var baseMaterial = new THREE.MeshPhongMaterial({ color: 0x606060 });
 
-  var wall1 = createParalellepiped(40, 3, 0.5, 0, new THREE.Vector3(0, 0, -20), quat, baseMaterial);
+  var wall1 = createParalellepiped(40, 6, 0.5, 0, new THREE.Vector3(0, 0, -20), quat, baseMaterial);
   wall1.castShadow = true;
   wall1.receiveShadow = true;
-  var wall2 = createParalellepiped(40, 3, 0.5, 0, new THREE.Vector3(0, 0, 20), quat, baseMaterial);
+  var wall2 = createParalellepiped(40, 6, 0.5, 0, new THREE.Vector3(0, 0, 20), quat, baseMaterial);
   wall2.castShadow = true;
   wall2.receiveShadow = true;
-  var wall3 = createParalellepiped(0.5, 3, 40, 0, new THREE.Vector3(20, 0, 0), quat, baseMaterial);
+  var wall3 = createParalellepiped(0.5, 6, 40, 0, new THREE.Vector3(20, 0, 0), quat, baseMaterial);
   wall3.castShadow = true;
   wall3.receiveShadow = true;
-  var wall4 = createParalellepiped(0.5, 3, 40, 0, new THREE.Vector3(-20, 0, 0), quat, baseMaterial);
+  var wall4 = createParalellepiped(0.5, 6, 40, 0, new THREE.Vector3(-20, 0, 0), quat, baseMaterial);
   wall4.castShadow = true;
   wall4.receiveShadow = true;
 
@@ -194,7 +194,7 @@ function createObjects() {
   ball.receiveShadow = true;
   var ballShape = new Ammo.btSphereShape(ballRadius);
   ballShape.setMargin(margin);
-  pos.set(-3, 0.8, 9);
+  pos.set(-3, 0.0, 13);
   quat.set(0, 0, 0, 1);
   createRigidBody(ball, ballShape, ballMass, pos, quat);
   ball.userData.physicsBody.setFriction(0.5);
@@ -250,10 +250,10 @@ function createObjects() {
   // The cloth =======================================================================
   // Cloth graphic object
   var clothWidth = 5;
-  var clothHeight = 5;
+  var clothHeight = 6;
   var clothNumSegmentsZ = clothWidth * 5;
   var clothNumSegmentsY = clothHeight * 5;
-  var clothPos = new THREE.Vector3(ropePos.x, ropePos.y + ropeLength - 0.5 * clothHeight + 0.1, -7);
+  var clothPos = new THREE.Vector3(ropePos.x, ropePos.y + ropeLength - 0.5 * clothHeight + 0.1, -9);
 
   var clothGeometry = new THREE.PlaneBufferGeometry(clothWidth, clothHeight, clothNumSegmentsZ, clothNumSegmentsY);
   clothGeometry.rotateY(Math.PI * 0.5);
@@ -295,7 +295,7 @@ function createObjects() {
 
   // The base =======================================================================
   var armMass = 2;
-  var armLength = 25;
+  var armLength = 28;
   var pylonHeight = ropePos.y + ropeLength;
 
   pos.set(ropePos.x, 0.1, 0);
@@ -453,7 +453,7 @@ function generateNewSphere() {
 
   threeObject.position.set((Math.random() - 0.5) * 30, objectSize + 25, (Math.random() - 0.5) * 30);
 
-  var mass = objectSize * 5;
+  var mass = 0.1;
   createRigidBody(threeObject, shape, mass, threeObject.position, new THREE.Quaternion(0, 0, 0, 1));
 
 }
