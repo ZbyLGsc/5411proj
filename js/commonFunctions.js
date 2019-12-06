@@ -3,6 +3,9 @@ var SCREEN_HEIGHT;
 var canvas, context;
 var container, stats;
 var controls;
+var textureLoader;
+var raycaster;
+var mouseCoords;
 var pathTracingScene, screenTextureScene, screenOutputScene;
 var pathTracingUniforms, screenTextureUniforms, screenOutputUniforms;
 var pathTracingDefines;
@@ -210,6 +213,23 @@ function init() {
                         event.preventDefault();
                 }, false);
 
+                window.addEventListener('mousedown', function (event) {
+
+                        // triggered by right button
+                        if (event.which != 3) {
+                          return;
+                        }
+                        mouseCoords.set(
+                          (event.clientX / window.innerWidth) * 2 - 1,
+                          - (event.clientY / window.innerHeight) * 2 + 1
+                        );
+                    
+                        raycaster.setFromCamera(mouseCoords, worldCamera);
+                    
+                        throw_ball();
+                    
+                      }, false);
+
 
                 var pointerlockChange = function (event) {
 
@@ -268,6 +288,9 @@ function initTHREEjs() {
         //suggestion: set to false for production
         renderer.debug.checkShaderErrors = true;
 
+        raycaster = new THREE.Raycaster();
+        mouseCoords = new THREE.Vector2();
+
         context = renderer.getContext();
 
         renderer.autoClear = false;
@@ -290,6 +313,8 @@ function initTHREEjs() {
 
         
         clock = new THREE.Clock();
+
+        textureLoader = new THREE.TextureLoader();
 
         pathTracingScene = new THREE.Scene();
         screenTextureScene = new THREE.Scene();
@@ -342,7 +367,6 @@ function initTHREEjs() {
         // setup scene/demo-specific objects, variables, and data
         initSceneData();
 
-
         // setup screen-size quad geometry and shaders....
 
         // this full-screen quad mesh performs the path tracing operations and produces a screen-sized image
@@ -393,12 +417,13 @@ function initTHREEjs() {
 
 
 
-
 function animate() {
 
         requestAnimationFrame(animate);
 
         frameTime = clock.getDelta();
+
+        updatePhysics(frameTime);
 
         elapsedTime = clock.getElapsedTime() % 1000;
 

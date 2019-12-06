@@ -24,6 +24,7 @@ uniform sampler2D t_PerlinNoise;
 #define N_QUADS 4
 #define N_BOXES 2
 #define N_OPENCYLINDERS 4
+#define N_SPHERES 3
 
 
 //-----------------------------------------------------------------------
@@ -32,11 +33,13 @@ struct Ray { vec3 origin; vec3 direction; };
 struct OpenCylinder { float radius; vec3 pos1; vec3 pos2; vec3 emission; vec3 color; int type; };
 struct Quad { vec3 v0; vec3 v1; vec3 v2; vec3 v3; vec3 emission; vec3 color; int type; };
 struct Box { vec3 minCorner; vec3 maxCorner; vec3 emission; vec3 color; int type; };
+struct Sphere { float radius; vec3 position; vec3 emission; vec3 color; int type; };
 struct Intersection { vec3 normal; vec3 emission; vec3 color; vec2 uv; int type; };
 
 OpenCylinder openCylinders[N_OPENCYLINDERS];
 // Quad quads[N_QUADS];
-// Box boxes[N_BOXES];
+Box boxes[N_BOXES];
+Sphere spheres[N_SPHERES];
 
 
 #include <pathtracing_random_functions>
@@ -330,45 +333,59 @@ float SceneIntersect( Ray r, inout Intersection intersec, bool checkOcean )
 			intersec.type = openCylinders[i].type;
 		}
         }
+
+	for (int i = 0; i < N_SPHERES; i++)
+        {
+		d = SphereIntersect( spheres[i].radius, spheres[i].position, r );
+		if (d < t)
+		{
+			t = d;
+			intersec.normal = normalize((r.origin + r.direction * t) - spheres[i].position);
+			intersec.emission = spheres[i].emission;
+			intersec.color = spheres[i].color;
+			// intersec.roughness = spheres[i].roughness;
+			intersec.type = spheres[i].type;
+		}
+        }
 	
-	// // TALL MIRROR BOX
-	// // transform ray into Tall Box's object space
-	// rObj.origin = vec3( uTallBoxInvMatrix * vec4(r.origin, 1.0) );
-	// rObj.direction = vec3( uTallBoxInvMatrix * vec4(r.direction, 0.0) );
-	// d = BoxIntersect( boxes[0].minCorner, boxes[0].maxCorner, rObj, normal );
+	// TALL MIRROR BOX
+	// transform ray into Tall Box's object space
+	rObj.origin = vec3( uTallBoxInvMatrix * vec4(r.origin, 1.0) );
+	rObj.direction = vec3( uTallBoxInvMatrix * vec4(r.direction, 0.0) );
+	d = BoxIntersect( boxes[0].minCorner, boxes[0].maxCorner, rObj, normal );
 	
-	// if (d < t)
-	// {	
-	// 	t = d;
+	if (d < t)
+	{	
+		t = d;
 		
-	// 	// transfom normal back into world space
-	// 	normal = normalize(normal);
-	// 	normal = vec3(uTallBoxNormalMatrix * normal);
-	// 	intersec.normal = normalize(normal);
-	// 	intersec.emission = boxes[0].emission;
-	// 	intersec.color = boxes[0].color;
-	// 	intersec.type = boxes[0].type;
-	// }
+		// transfom normal back into world space
+		normal = normalize(normal);
+		normal = vec3(uTallBoxNormalMatrix * normal);
+		intersec.normal = normalize(normal);
+		intersec.emission = boxes[0].emission;
+		intersec.color = boxes[0].color;
+		intersec.type = boxes[0].type;
+	}
 	
 	
-	// // SHORT DIFFUSE WHITE BOX
-	// // transform ray into Short Box's object space
-	// rObj.origin = vec3( uShortBoxInvMatrix * vec4(r.origin, 1.0) );
-	// rObj.direction = vec3( uShortBoxInvMatrix * vec4(r.direction, 0.0) );
-	// d = BoxIntersect( boxes[1].minCorner, boxes[1].maxCorner, rObj, normal );
+	// SHORT DIFFUSE WHITE BOX
+	// transform ray into Short Box's object space
+	rObj.origin = vec3( uShortBoxInvMatrix * vec4(r.origin, 1.0) );
+	rObj.direction = vec3( uShortBoxInvMatrix * vec4(r.direction, 0.0) );
+	d = BoxIntersect( boxes[1].minCorner, boxes[1].maxCorner, rObj, normal );
 	
-	// if (d < t)
-	// {	
-	// 	t = d;
+	if (d < t)
+	{	
+		t = d;
 		
-	// 	// transfom normal back into world space
-	// 	normal = normalize(normal);
-	// 	normal = vec3(uShortBoxNormalMatrix * normal);
-	// 	intersec.normal = normalize(normal);
-	// 	intersec.emission = boxes[1].emission;
-	// 	intersec.color = boxes[1].color;
-	// 	intersec.type = boxes[1].type;
-	// }
+		// transfom normal back into world space
+		normal = normalize(normal);
+		normal = vec3(uShortBoxNormalMatrix * normal);
+		intersec.normal = normalize(normal);
+		intersec.emission = boxes[1].emission;
+		intersec.color = boxes[1].color;
+		intersec.type = boxes[1].type;
+	}
 	
 	
 	///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -838,6 +855,8 @@ vec3 CalculateRadiance( Ray r, vec3 sunDirection, inout uvec2 seed, inout bool r
 			continue;
 			
 		} //end if (intersec.type == WOOD)
+
+		
 		
 	} // end for (int bounces = 0; bounces < 5; bounces++)
 	
@@ -890,8 +909,12 @@ void SetupScene( void )
 	openCylinders[2] = OpenCylinder( 50.0, vec3(50 , 0,-510), vec3(50 ,-1000,-510), z, vec3(0.05, 0.0, 0.0), WOOD);// wooden support OpenCylinder
 	openCylinders[3] = OpenCylinder( 50.0, vec3(500, 0,-510), vec3(500,-1000,-510), z, vec3(0.05, 0.0, 0.0), WOOD);// wooden support OpenCylinder
 	
-	// boxes[0] = Box( vec3( -82.0,-170.0, -80.0), vec3(  82.0, 170.0,   80.0), z, vec3(1.0), SPEC);// Tall Mirror Box Left
-	// boxes[1] = Box( vec3( -86.0, -85.0, -80.0), vec3(  86.0,  85.0,   80.0), z, vec3(0.9), DIFF);// Short Diffuse Box Right
+	boxes[0] = Box( vec3( -82.0,-170.0, -80.0), vec3(  82.0, 170.0,   80.0), z, vec3(1.0), SPEC);// Tall Mirror Box Left
+	boxes[1] = Box( vec3( -86.0, -85.0, -80.0), vec3(  86.0,  85.0,   80.0), z, vec3(0.9), DIFF);// Short Diffuse Box Right
+
+	spheres[0] = Sphere(90.0, vec3( 500, 90, 25), z, vec3(0.8, 0.7, 0.4), DIFF);// White Ball
+	spheres[1] = Sphere(90.0, vec3(-500, 90, 0),   z, vec3(0.9, 0.4, 0.0), DIFF);// Yellow Ball
+	spheres[2] = Sphere(90.0, vec3( 50, 90, 0), z, vec3(0.25, 0.0, 0.0), DIFF);// Red Ball
 }
 
 

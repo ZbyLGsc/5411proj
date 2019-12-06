@@ -7,6 +7,23 @@ var sunDirection = new THREE.Vector3();
 var tallBoxGeometry, tallBoxMaterial, tallBoxMesh;
 var shortBoxGeometry, shortBoxMaterial, shortBoxMesh;
 
+// Physics variables
+var gravityConstant = - 9.8;
+var collisionConfiguration;
+var dispatcher;
+var broadphase;
+var solver;
+var softBodySolver;
+var physicsWorld;
+var rigidBodies = [];
+var margin = 0.05;
+var hinge;
+var rope;
+var cloth;
+var transformAux1;
+
+var armMovement = 0;
+
 // called automatically from within initTHREEjs() function
 function initSceneData() {
         
@@ -14,35 +31,172 @@ function initSceneData() {
         EPS_intersect = mouseControl ? 0.01 : 1.0; // less precision on mobile
 
         // Boxes
-        // tallBoxGeometry = new THREE.BoxGeometry(1,1,1);
-        // tallBoxMaterial = new THREE.MeshPhysicalMaterial( {
-        //         color: new THREE.Color(0.95, 0.95, 0.95), //RGB, ranging from 0.0 - 1.0
-        //         roughness: 1.0 // ideal Diffuse material	
-        // } );
+        tallBoxGeometry = new THREE.BoxGeometry(1,1,1);
+        tallBoxMaterial = new THREE.MeshPhysicalMaterial( {
+                color: new THREE.Color(0.95, 0.95, 0.95), //RGB, ranging from 0.0 - 1.0
+                roughness: 1.0 // ideal Diffuse material	
+        } );
         
-        // tallBoxMesh = new THREE.Mesh(tallBoxGeometry, tallBoxMaterial);
-        // pathTracingScene.add(tallBoxMesh);
-        // tallBoxMesh.visible = false; // disable normal Three.js rendering updates of this object: 
-        // // it is just a data placeholder as well as an Object3D that can be transformed/manipulated by 
-        // // using familiar Three.js library commands. It is then fed into the GPU path tracing renderer
-        // // through its 'matrixWorld' matrix. See below:
-        // tallBoxMesh.rotation.set(0, Math.PI * 0.1, 0);
-        // tallBoxMesh.position.set(180, 170, -350);
-        // tallBoxMesh.updateMatrixWorld(true); // 'true' forces immediate matrix update
+        tallBoxMesh = new THREE.Mesh(tallBoxGeometry, tallBoxMaterial);
+        pathTracingScene.add(tallBoxMesh);
+        tallBoxMesh.visible = false; // disable normal Three.js rendering updates of this object: 
+        // it is just a data placeholder as well as an Object3D that can be transformed/manipulated by 
+        // using familiar Three.js library commands. It is then fed into the GPU path tracing renderer
+        // through its 'matrixWorld' matrix. See below:
+        tallBoxMesh.rotation.set(0, Math.PI * 0.1, 0);
+        tallBoxMesh.position.set(180, 170, -350);
+        tallBoxMesh.updateMatrixWorld(true); // 'true' forces immediate matrix update
         
         
-        // shortBoxGeometry = new THREE.BoxGeometry(1,1,1);
-        // shortBoxMaterial = new THREE.MeshPhysicalMaterial( {
-        //         color: new THREE.Color(0.95, 0.95, 0.95), //RGB, ranging from 0.0 - 1.0
-        //         roughness: 1.0 // ideal Diffuse material	
-        // } );
+        shortBoxGeometry = new THREE.BoxGeometry(1,1,1);
+        shortBoxMaterial = new THREE.MeshPhysicalMaterial( {
+                color: new THREE.Color(0.95, 0.95, 0.95), //RGB, ranging from 0.0 - 1.0
+                roughness: 1.0 // ideal Diffuse material	
+        } );
         
-        // shortBoxMesh = new THREE.Mesh(shortBoxGeometry, shortBoxMaterial);
-        // pathTracingScene.add(shortBoxMesh);
-        // shortBoxMesh.visible = false;
-        // shortBoxMesh.rotation.set(0, -Math.PI * 0.09, 0);
-        // shortBoxMesh.position.set(370, 85, -170);
-        // shortBoxMesh.updateMatrixWorld(true); // 'true' forces immediate matrix update
+        shortBoxMesh = new THREE.Mesh(shortBoxGeometry, shortBoxMaterial);
+        pathTracingScene.add(shortBoxMesh);
+        shortBoxMesh.visible = false;
+        shortBoxMesh.rotation.set(0, -Math.PI * 0.09, 0);
+        shortBoxMesh.position.set(370, 85, -170);
+        shortBoxMesh.updateMatrixWorld(true); // 'true' forces immediate matrix update
+
+
+
+        var pos = new THREE.Vector3();
+        var quat = new THREE.Quaternion();
+        var baseMaterial = new THREE.MeshPhongMaterial({ color: 0x606060 });
+        // The rope ball =======================================================================
+
+        // Ball
+        var ballMass = 15;
+        var ballRadius = 90;
+
+        var material3 = new THREE.MeshBasicMaterial({ color: 0xffffff, refractionRatio: 0.1 });
+        // material3.envMap.mapping = THREE.CubeRefractionMapping;
+        var ball = new THREE.Mesh(new THREE.SphereBufferGeometry(ballRadius, 20, 20), material3);
+        ball.castShadow = true;
+        ball.receiveShadow = true;
+        var ballShape = new Ammo.btSphereShape(ballRadius);
+        ballShape.setMargin(margin);
+        pos.set(500, 90, 25);
+        quat.set(0, 0, 0, 1);
+        createRigidBody(ball, ballShape, ballMass, pos, quat);
+        ball.userData.physicsBody.setFriction(0.5);
+
+        // Rope graphic object
+        var ropeNumSegments = 10;
+        var ropeLength = 4;
+        var ropeMass = 1.0;
+        var ropePos = ball.position.clone();
+        // ropePos.y += ballRadius;
+
+        // var segmentLength = ropeLength / ropeNumSegments;
+        // var ropeGeometry = new THREE.BufferGeometry();
+        // var ropeMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+        // var ropePositions = [];
+        // var ropeIndices = [];
+
+        // for (var i = 0; i < ropeNumSegments + 1; i++) {
+
+        // ropePositions.push(ropePos.x, ropePos.y + i * segmentLength, ropePos.z);
+
+        // }
+
+        // for (var i = 0; i < ropeNumSegments; i++) {
+
+        // ropeIndices.push(i, i + 1);
+
+        // }
+
+        // ropeGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(ropeIndices), 1));
+        // ropeGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(ropePositions), 3));
+        // ropeGeometry.computeBoundingSphere();
+        // rope = new THREE.LineSegments(ropeGeometry, ropeMaterial);
+        // rope.castShadow = true;
+        // rope.receiveShadow = true;
+        // scene.add(rope);
+
+        // // Rope physic object
+        // var softBodyHelpers = new Ammo.btSoftBodyHelpers();
+        // var ropeStart = new Ammo.btVector3(ropePos.x, ropePos.y, ropePos.z);
+        // var ropeEnd = new Ammo.btVector3(ropePos.x, ropePos.y + ropeLength, ropePos.z);
+        // var ropeSoftBody = softBodyHelpers.CreateRope(physicsWorld.getWorldInfo(), ropeStart, ropeEnd, ropeNumSegments - 1, 0);
+        // var sbConfig = ropeSoftBody.get_m_cfg();
+        // sbConfig.set_viterations(10);
+        // sbConfig.set_piterations(10);
+        // ropeSoftBody.setTotalMass(ropeMass, false);
+        // Ammo.castObject(ropeSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(margin * 3);
+        // physicsWorld.addSoftBody(ropeSoftBody, 1, - 1);
+        // rope.userData.physicsBody = ropeSoftBody;
+        // // Disable deactivation
+        // ropeSoftBody.setActivationState(4);
+
+        // The cloth =======================================================================
+        // Cloth graphic object
+        // var clothWidth = 5;
+        // var clothHeight = 6;
+        // var clothNumSegmentsZ = clothWidth * 5;
+        // var clothNumSegmentsY = clothHeight * 5;
+        // var clothPos = new THREE.Vector3(ropePos.x, ropePos.y + ropeLength - 0.5 * clothHeight + 0.1, -9);
+
+        // var clothGeometry = new THREE.PlaneBufferGeometry(clothWidth, clothHeight, clothNumSegmentsZ, clothNumSegmentsY);
+        // clothGeometry.rotateY(Math.PI * 0.5);
+        // clothGeometry.translate(clothPos.x, clothPos.y, clothPos.z - clothWidth * 0.5);
+
+        // var clothMaterial = new THREE.MeshLambertMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide });
+        // cloth = new THREE.Mesh(clothGeometry, clothMaterial);
+        // cloth.castShadow = true;
+        // cloth.receiveShadow = true;
+        // scene.add(cloth);
+        // textureLoader.load("../textures/sunflower.jpg", function (texture) {
+
+        // texture.wrapS = THREE.RepeatWrapping;
+        // texture.wrapT = THREE.RepeatWrapping;
+        // // texture.repeat.set(clothNumSegmentsZ, clothNumSegmentsY);
+        // texture.repeat.set(1, 2);
+        // cloth.material.map = texture;
+        // cloth.material.needsUpdate = true;
+
+        // });
+
+        // // Cloth physic object
+        // var softBodyHelpers2 = new Ammo.btSoftBodyHelpers();
+        // var clothCorner00 = new Ammo.btVector3(clothPos.x, clothPos.y + 0.5 * clothHeight, clothPos.z);
+        // var clothCorner01 = new Ammo.btVector3(clothPos.x, clothPos.y + 0.5 * clothHeight, clothPos.z - clothWidth);
+        // var clothCorner11 = new Ammo.btVector3(clothPos.x, clothPos.y - 0.5 * clothHeight, clothPos.z - clothWidth);
+        // var clothCorner10 = new Ammo.btVector3(clothPos.x, clothPos.y - 0.5 * clothHeight, clothPos.z);
+        // var clothSoftBody = softBodyHelpers2.CreatePatch(physicsWorld.getWorldInfo(), clothCorner00, clothCorner01, clothCorner10, clothCorner11, clothNumSegmentsZ + 1, clothNumSegmentsY + 1, 0, true);
+        // var sbConfig2 = clothSoftBody.get_m_cfg();
+        // sbConfig2.set_viterations(10);
+        // sbConfig2.set_piterations(10);
+
+        // clothSoftBody.setTotalMass(0.9, false);
+        // Ammo.castObject(clothSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(margin * 3);
+        // physicsWorld.addSoftBody(clothSoftBody, 1, - 1);
+        // cloth.userData.physicsBody = clothSoftBody;
+        // // Disable deactivation
+        // clothSoftBody.setActivationState(4);
+        // The base =======================================================================
+        var armMass = 20;
+        var armLength = 280;
+        var pylonHeight = ropePos.y + ropeLength;
+
+        pos.set(ropePos.x, 0.1, 0);
+        quat.set(0, 0, 0, 1);
+        var base = createParalellepiped(1, 0.2, 1, 0, pos, quat, baseMaterial);
+        base.castShadow = true;
+        base.receiveShadow = true;
+
+        pos.set(ropePos.x, 0.5 * pylonHeight, 0);
+        var pylon = createParalellepiped(0.8, pylonHeight, 0.8, 0, pos, quat, baseMaterial);
+        pylon.castShadow = true;
+        pylon.receiveShadow = true;
+
+        pos.set(ropePos.x, pylonHeight + 0.2, 0);
+        var arm = createParalellepiped(0.4, 0.4, armLength + 0.4, armMass, pos, quat, baseMaterial);
+        arm.castShadow = true;
+        arm.receiveShadow = true;
 
 
         // set camera's field of view
@@ -96,11 +250,11 @@ function initPathTracingShaders() {
         
                 uCameraMatrix: { type: "m4", value: new THREE.Matrix4() },
                 
-                // uShortBoxInvMatrix: { type: "m4", value: new THREE.Matrix4() },
-                // uShortBoxNormalMatrix: { type: "m3", value: new THREE.Matrix3() },
+                uShortBoxInvMatrix: { type: "m4", value: new THREE.Matrix4() },
+                uShortBoxNormalMatrix: { type: "m3", value: new THREE.Matrix3() },
                 
-                // uTallBoxInvMatrix: { type: "m4", value: new THREE.Matrix4() },
-                // uTallBoxNormalMatrix: { type: "m3", value: new THREE.Matrix3() }
+                uTallBoxInvMatrix: { type: "m4", value: new THREE.Matrix4() },
+                uTallBoxNormalMatrix: { type: "m3", value: new THREE.Matrix3() }
 
         };
 
@@ -188,11 +342,11 @@ function updateVariablesAndUniforms() {
         pathTracingUniforms.uFrameCounter.value = frameCounter;
         pathTracingUniforms.uRandomVector.value.copy(randomVector.set( Math.random(), Math.random(), Math.random() ));
         
-        // BOXES
-        // pathTracingUniforms.uTallBoxInvMatrix.value.getInverse( tallBoxMesh.matrixWorld );
-        // pathTracingUniforms.uTallBoxNormalMatrix.value.getNormalMatrix( tallBoxMesh.matrixWorld );
-        // pathTracingUniforms.uShortBoxInvMatrix.value.getInverse( shortBoxMesh.matrixWorld );
-        // pathTracingUniforms.uShortBoxNormalMatrix.value.getNormalMatrix( shortBoxMesh.matrixWorld );
+        //BOXES
+        pathTracingUniforms.uTallBoxInvMatrix.value.getInverse( tallBoxMesh.matrixWorld );
+        pathTracingUniforms.uTallBoxNormalMatrix.value.getNormalMatrix( tallBoxMesh.matrixWorld );
+        pathTracingUniforms.uShortBoxInvMatrix.value.getInverse( shortBoxMesh.matrixWorld );
+        pathTracingUniforms.uShortBoxNormalMatrix.value.getNormalMatrix( shortBoxMesh.matrixWorld );
                                 
         // CAMERA
         if (cameraControlsObject.position.y < 2.0)
@@ -207,9 +361,34 @@ function updateVariablesAndUniforms() {
 
 } // end function updateUniforms()
 
+Ammo().then(function (AmmoLib) {
 
+        Ammo = AmmoLib;
+      
+        initPhysics();
+        init();
+      //   animate();
+      
+      });
 
-init(); // init app and start animating
+function initPhysics() {
+
+// Physics configuration
+
+        collisionConfiguration = new Ammo.btSoftBodyRigidBodyCollisionConfiguration();
+        dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration);
+        broadphase = new Ammo.btDbvtBroadphase();
+        solver = new Ammo.btSequentialImpulseConstraintSolver();
+        softBodySolver = new Ammo.btDefaultSoftBodySolver();
+        physicsWorld = new Ammo.btSoftRigidDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration, softBodySolver);
+        physicsWorld.setGravity(new Ammo.btVector3(0, gravityConstant, 0));
+        physicsWorld.getWorldInfo().set_m_gravity(new Ammo.btVector3(0, gravityConstant, 0));
+
+        transformAux1 = new Ammo.btTransform();
+
+}
+        
+//init(); // init app and start animating
 
 /*************************************             Scene.js                         *************************************** */
 
@@ -561,83 +740,112 @@ init(); // init app and start animating
 //   skyBallMesh.userData.physicsBody.setFriction(0.5);
 // }
 
-// function createParalellepiped(sx, sy, sz, mass, pos, quat, material) {
+function createParalellepiped(sx, sy, sz, mass, pos, quat, material) {
 
-//   var threeObject = new THREE.Mesh(new THREE.BoxBufferGeometry(sx, sy, sz, 1, 1, 1), material);
-//   var shape = new Ammo.btBoxShape(new Ammo.btVector3(sx * 0.5, sy * 0.5, sz * 0.5));
-//   shape.setMargin(margin);
+  var threeObject = new THREE.Mesh(new THREE.BoxBufferGeometry(sx, sy, sz, 1, 1, 1), material);
+  var shape = new Ammo.btBoxShape(new Ammo.btVector3(sx * 0.5, sy * 0.5, sz * 0.5));
+  shape.setMargin(margin);
 
-//   createRigidBody(threeObject, shape, mass, pos, quat);
+  createRigidBody(threeObject, shape, mass, pos, quat);
 
-//   return threeObject;
+  return threeObject;
 
-// }
+}
 
-// function createRigidBody(object, physicsShape, mass, pos, quat, vel, angVel) {
+function createRigidBody(object, physicsShape, mass, pos, quat, vel, angVel) {
 
-//   if (pos) {
+  if (pos) {
 
-//     object.position.copy(pos);
+    object.position.copy(pos);
 
-//   } else {
+  } else {
 
-//     pos = object.position;
+    pos = object.position;
 
-//   }
-//   if (quat) {
+  }
+  if (quat) {
 
-//     object.quaternion.copy(quat);
+    object.quaternion.copy(quat);
 
-//   } else {
+  } else {
 
-//     quat = object.quaternion;
+    quat = object.quaternion;
 
-//   }
+  }
 
-//   var transform = new Ammo.btTransform();
-//   transform.setIdentity();
-//   transform.setOrigin(new Ammo.btVector3(pos.x, pos.y, pos.z));
-//   transform.setRotation(new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w));
-//   var motionState = new Ammo.btDefaultMotionState(transform);
+  var transform = new Ammo.btTransform();
+  transform.setIdentity();
+  transform.setOrigin(new Ammo.btVector3(pos.x, pos.y, pos.z));
+  transform.setRotation(new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w));
+  var motionState = new Ammo.btDefaultMotionState(transform);
 
-//   var localInertia = new Ammo.btVector3(0, 0, 0);
-//   physicsShape.calculateLocalInertia(mass, localInertia);
+  var localInertia = new Ammo.btVector3(0, 0, 0);
+  physicsShape.calculateLocalInertia(mass, localInertia);
 
-//   var rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, physicsShape, localInertia);
-//   var body = new Ammo.btRigidBody(rbInfo);
+  var rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, physicsShape, localInertia);
+  var body = new Ammo.btRigidBody(rbInfo);
 
-//   body.setFriction(0.5);
+  body.setFriction(0.5);
 
-//   if (vel) {
+  if (vel) {
 
-//     body.setLinearVelocity(new Ammo.btVector3(vel.x, vel.y, vel.z));
+    body.setLinearVelocity(new Ammo.btVector3(vel.x, vel.y, vel.z));
 
-//   }
-//   if (angVel) {
+  }
+  if (angVel) {
 
-//     body.setAngularVelocity(new Ammo.btVector3(angVel.x, angVel.y, angVel.z));
+    body.setAngularVelocity(new Ammo.btVector3(angVel.x, angVel.y, angVel.z));
 
-//   }
+  }
 
-//   object.userData.physicsBody = body;
-//   object.userData.collided = false;
+  object.userData.physicsBody = body;
+  object.userData.collided = false;
 
 //   scene.add(object);
 
-//   if (mass > 0) {
+  if (mass > 0) {
 
-//     rigidBodies.push(object);
+    rigidBodies.push(object);
 
-//     // Disable deactivation
-//     body.setActivationState(4);
+    // Disable deactivation
+    body.setActivationState(4);
 
-//   }
+  }
 
-//   physicsWorld.addRigidBody(body);
+  physicsWorld.addRigidBody(body);
 
-//   return body;
+  return body;
 
-// }
+}
+
+function throw_ball(){
+
+        // Creates a ball and throws it
+        var ballMaterial = new THREE.MeshPhongMaterial({ color: 0x202020 });
+        var ballMass = 35;
+        var ballRadius = 20;
+        
+        var ball = new THREE.Mesh(new THREE.SphereBufferGeometry(ballRadius, 14, 10), ballMaterial);
+        ball.castShadow = true;
+        ball.receiveShadow = true;
+        var ballShape = new Ammo.btSphereShape(ballRadius);
+        ballShape.setMargin(margin);
+        
+        var pos = new THREE.Vector3();
+        var quat = new THREE.Quaternion();
+        pos.copy(raycaster.ray.direction);
+        pos.add(raycaster.ray.origin);
+        quat.set(0, 0, 0, 1);
+        var ballBody = createRigidBody(ball, ballShape, ballMass, pos, quat);
+        
+        var vel = new THREE.Vector3();
+        vel.copy(raycaster.ray.direction);
+        vel.multiplyScalar(50);
+        ballBody.setLinearVelocity(new Ammo.btVector3(vel.x, vel.y, vel.z));
+
+
+        
+}
 
 // function createMaterial() {
 //   return new THREE.MeshPhongMaterial({ color: Math.floor(Math.random() * (1 << 24)) });
@@ -778,15 +986,15 @@ init(); // init app and start animating
 
 // }
 
-// function updatePhysics(deltaTime) {
+function updatePhysics(deltaTime) {
 
-//   // Hinge control
+  // Hinge control
 //   hinge.enableAngularMotor(true, 1.5 * armMovement, 50);
 
-//   // Step world
-//   physicsWorld.stepSimulation(deltaTime, 10);
+  // Step world
+  physicsWorld.stepSimulation(deltaTime, 10);
 
-//   // Update rope
+  // Update rope
 //   var softBody = rope.userData.physicsBody;
 //   var ropePositions = rope.geometry.attributes.position.array;
 //   var numVerts = ropePositions.length / 3;
@@ -803,25 +1011,25 @@ init(); // init app and start animating
 //   }
 //   rope.geometry.attributes.position.needsUpdate = true;
 
-//   // Update rigid bodies
-//   for (var i = 0, il = rigidBodies.length; i < il; i++) {
+  // Update rigid bodies
+  for (var i = 0, il = rigidBodies.length; i < il; i++) {
 
-//     var objThree = rigidBodies[i];
-//     var objPhys = objThree.userData.physicsBody;
-//     var ms = objPhys.getMotionState();
-//     if (ms) {
+    var objThree = rigidBodies[i];
+    var objPhys = objThree.userData.physicsBody;
+    var ms = objPhys.getMotionState();
+    if (ms) {
 
-//       ms.getWorldTransform(transformAux1);
-//       var p = transformAux1.getOrigin();
-//       var q = transformAux1.getRotation();
-//       objThree.position.set(p.x(), p.y(), p.z());
-//       objThree.quaternion.set(q.x(), q.y(), q.z(), q.w());
+      ms.getWorldTransform(transformAux1);
+      var p = transformAux1.getOrigin();
+      var q = transformAux1.getRotation();
+      objThree.position.set(p.x(), p.y(), p.z());
+      objThree.quaternion.set(q.x(), q.y(), q.z(), q.w());
 
-//     }
+    }
 
-//   }
+  }
 
-//   // Update cloth
+  // Update cloth
 //   softBody = cloth.userData.physicsBody;
 //   var clothPositions = cloth.geometry.attributes.position.array;
 //   numVerts = clothPositions.length / 3;
@@ -840,22 +1048,22 @@ init(); // init app and start animating
 //   cloth.geometry.attributes.position.needsUpdate = true;
 //   cloth.geometry.attributes.normal.needsUpdate = true;
 
-//   // Update rigid bodies
-//   for (var i = 0, il = rigidBodies.length; i < il; i++) {
+  // Update rigid bodies
+  for (var i = 0, il = rigidBodies.length; i < il; i++) {
 
-//     var objThree = rigidBodies[i];
-//     var objPhys = objThree.userData.physicsBody;
-//     var ms = objPhys.getMotionState();
-//     if (ms) {
+    var objThree = rigidBodies[i];
+    var objPhys = objThree.userData.physicsBody;
+    var ms = objPhys.getMotionState();
+    if (ms) {
 
-//       ms.getWorldTransform(transformAux1);
-//       var p = transformAux1.getOrigin();
-//       var q = transformAux1.getRotation();
-//       objThree.position.set(p.x(), p.y(), p.z());
-//       objThree.quaternion.set(q.x(), q.y(), q.z(), q.w());
+      ms.getWorldTransform(transformAux1);
+      var p = transformAux1.getOrigin();
+      var q = transformAux1.getRotation();
+      objThree.position.set(p.x(), p.y(), p.z());
+      objThree.quaternion.set(q.x(), q.y(), q.z(), q.w());
 
-//     }
+    }
 
-//   }
+  }
 
-// }
+}
