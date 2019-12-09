@@ -26,6 +26,10 @@ uniform int N_BOXES;
 uniform int N_OPENCYLINDERS;
 uniform int N_SPHERES;
 
+#define max_open_cylinder_num 10
+#define max_box_num 10
+#define max_sphere_num 20 
+
 
 //-----------------------------------------------------------------------
 
@@ -36,10 +40,14 @@ struct Box { vec3 minCorner; vec3 maxCorner; vec3 emission; vec3 color; int type
 struct Sphere { float radius; vec3 position; vec3 emission; vec3 color; int type; };
 struct Intersection { vec3 normal; vec3 emission; vec3 color; vec2 uv; int type; };
 
-uniform OpenCylinder openCylinders[999];
+OpenCylinder openCylinders[max_open_cylinder_num];
 // Quad quads[N_QUADS];
-uniform Box boxes[999];
-uniform Sphere spheres[999];
+Box boxes[max_box_num];
+Sphere spheres[max_sphere_num];
+
+uniform vec3 open_cylinders_v[6 * max_open_cylinder_num];
+uniform vec3 boxes_v[5 * max_box_num];
+uniform vec3 spheres_v[5 * max_sphere_num];
 
 
 #include <pathtracing_random_functions>
@@ -445,6 +453,7 @@ float SceneIntersect( Ray r, inout Intersection intersec, bool checkOcean )
 vec3 CalculateRadiance( Ray r, vec3 sunDirection, inout uvec2 seed, inout bool rayHitIsDynamic )
 //----------------------------------------------------------------------------------------------
 {
+	
 	Intersection intersec;
 	Ray firstRay;
 
@@ -905,17 +914,34 @@ void SetupScene( void )
 	// //quads[3] = Quad( vec3(  0.0, 548.8,-559.2), vec3(549.6, 548.8,-559.2), vec3(549.6, 548.8,   0.0), vec3(0.0, 548.8, 0.0),  z, vec3(0.9),  DIFF);// Ceiling
 	// quads[3] = Quad( vec3(  0.0, 0.0,   0.0), vec3(549.6, 0.0,   0.0), vec3(549.6, 0.0,-559.2), vec3(  0.0, 0.0,-559.2),    z, vec3(0.9), DIFF);// Floor
 	
-	openCylinders[0] = OpenCylinder( 50.0, vec3(50 , 0, -50), vec3(50 ,-1000, -50), z, vec3(0.05, 0.0, 0.0), WOOD);// wooden support OpenCylinder
-	openCylinders[1] = OpenCylinder( 50.0, vec3(500, 0, -50), vec3(500,-1000, -50), z, vec3(0.05, 0.0, 0.0), WOOD);// wooden support OpenCylinder
-	openCylinders[2] = OpenCylinder( 50.0, vec3(50 , 0,-510), vec3(50 ,-1000,-510), z, vec3(0.05, 0.0, 0.0), WOOD);// wooden support OpenCylinder
-	openCylinders[3] = OpenCylinder( 50.0, vec3(500, 0,-510), vec3(500,-1000,-510), z, vec3(0.05, 0.0, 0.0), WOOD);// wooden support OpenCylinder
+	// openCylinders[0] = OpenCylinder( 50.0, vec3(50 , 0, -50), vec3(50 ,-1000, -50), z, vec3(0.05, 0.0, 0.0), WOOD);// wooden support OpenCylinder
+	// openCylinders[1] = OpenCylinder( 50.0, vec3(500, 0, -50), vec3(500,-1000, -50), z, vec3(0.05, 0.0, 0.0), WOOD);// wooden support OpenCylinder
+	// openCylinders[2] = OpenCylinder( 50.0, vec3(50 , 0,-510), vec3(50 ,-1000,-510), z, vec3(0.05, 0.0, 0.0), WOOD);// wooden support OpenCylinder
+	// openCylinders[3] = OpenCylinder( 50.0, vec3(500, 0,-510), vec3(500,-1000,-510), z, vec3(0.05, 0.0, 0.0), WOOD);// wooden support OpenCylinder
 	
-	boxes[0] = Box( vec3( -82.0,-170.0, -80.0), vec3(  82.0, 170.0,   80.0), z, vec3(1.0), SPEC);// Tall Mirror Box Left
-	boxes[1] = Box( vec3( -86.0, -85.0, -80.0), vec3(  86.0,  85.0,   80.0), z, vec3(0.9), DIFF);// Short Diffuse Box Right
+	// boxes[0] = Box( vec3( -82.0,-170.0, -80.0), vec3(  82.0, 170.0,   80.0), z, vec3(1.0), SPEC);// Tall Mirror Box Left
+	// boxes[1] = Box( vec3( -86.0, -85.0, -80.0), vec3(  86.0,  85.0,   80.0), z, vec3(0.9), DIFF);// Short Diffuse Box Right
 
-	spheres[0] = Sphere(90.0, vec3( 500, 90, 25), z, vec3(0.8, 0.7, 0.4), DIFF);// White Ball
-	spheres[1] = Sphere(90.0, vec3(-500, 90, 0),   z, vec3(0.9, 0.4, 0.0), DIFF);// Yellow Ball
-	spheres[2] = Sphere(90.0, vec3( 50, 90, 0), z, vec3(0.25, 0.0, 0.0), DIFF);// Red Ball
+	// spheres[0] = Sphere(90.0, vec3( 500, 90, 25), z, vec3(0.8, 0.7, 0.4), DIFF);// White Ball
+	// spheres[1] = Sphere(90.0, vec3(-500, 90, 0),   z, vec3(0.9, 0.4, 0.0), DIFF);// Yellow Ball
+	// spheres[2] = Sphere(90.0, vec3( 50, 90, 0), z, vec3(0.25, 0.0, 0.0), DIFF);// Red Ball
+
+
+
+	//set open cylinder
+	for(int i = 0; i < max_open_cylinder_num; i++){
+		openCylinders[i] = OpenCylinder(open_cylinders_v[6 * i].x, open_cylinders_v[6 * i + 1], open_cylinders_v[6 * i + 2], open_cylinders_v[6 * i + 3], open_cylinders_v[6 * i + 4], open_cylinders_v[6 * i + 5].x);
+	}
+
+	//set boxes
+	for(int i = 0; i < max_box_num; i++){
+		boxes[i] = Box(boxes_v[5 * i], boxes_v[5 * i + 1], boxes_v[5 * i + 2], boxes_v[5 * i + 3], boxes_v[5 * i + 4].x);
+	}
+
+	//set spheres
+	for(int i = 0; i < max_sphere_num; i++){
+		spheres[i] = Sphere(spheres_v[5 * i].x, spheres_v[5 * i + 1], spheres_v[5 * i + 2], spheres_v[5 * i + 3], spheres_v[5 * i + 4].x);
+	}
 }
 
 
