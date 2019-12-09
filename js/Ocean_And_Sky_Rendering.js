@@ -86,26 +86,6 @@ function initSceneData() {
 function initPathTracingShaders() {
 
         /* array of vectors */
-        // sphere
-        var vec3Array100 = [];
-        vec3Array100.push(new THREE.Vector3(90.0));
-        vec3Array100.push(new THREE.Vector3(500, 90, 25));
-        vec3Array100.push(new THREE.Vector3(0));
-        vec3Array100.push(new THREE.Vector3(0.8, 0.7, 0.4));
-        vec3Array100.push(new THREE.Vector3(1.0));
-        for (let index = 0; index < 95; index++) {
-                vec3Array100.push(new THREE.Vector3());
-        }
-        // box
-        var vec3Array50 = [];
-        for (let index = 0; index < 50; index++) {
-                vec3Array50.push(new THREE.Vector3());
-        }
-        // cylinder
-        var vec3Array60 = [];
-        for (let index = 0; index < 60; index++) {
-                vec3Array60.push(new THREE.Vector3());
-        }
 
         // scene/demo-specific uniforms go here
         pathTracingUniforms = {
@@ -139,12 +119,7 @@ function initPathTracingShaders() {
                 uTallBoxInvMatrix: { type: "m4", value: new THREE.Matrix4() },
                 uTallBoxNormalMatrix: { type: "m3", value: new THREE.Matrix3() },
                 uTestHeight: { type: "f", value: 10 },
-                spheres_v: { type: "v3a", value: vec3Array100 },
-                boxes_v: { type: "v3a", value: vec3Array50 },
-                open_cylinders_v: { type: "v3a", value: vec3Array60 },
-                N_BOXES: {type: "d", value: 0},
-                N_SPHERES: {type: "d", value: 1},
-                N_OPENCYLINDERS: {type: "d", value: 0}
+                uMovableSpherePos: { type: "v3", value: new THREE.Vector3(0.0, 0.0, -2000.0)}
                 
 
         };
