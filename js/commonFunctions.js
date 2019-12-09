@@ -213,6 +213,7 @@ function init() {
                         event.preventDefault();
                 }, false);
 
+                // TODO: throw balls
                 window.addEventListener('mousedown', function (event) {
 
                         // triggered by right button
