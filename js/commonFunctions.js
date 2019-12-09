@@ -218,18 +218,18 @@ function init() {
 
                         // triggered by right button
                         if (event.which != 3) {
-                          return;
+                                return;
                         }
                         mouseCoords.set(
-                          (event.clientX / window.innerWidth) * 2 - 1,
-                          - (event.clientY / window.innerHeight) * 2 + 1
+                                (event.clientX / window.innerWidth) * 2 - 1,
+                                - (event.clientY / window.innerHeight) * 2 + 1
                         );
-                    
+
                         raycaster.setFromCamera(mouseCoords, worldCamera);
-                    
+
                         throw_ball();
-                    
-                      }, false);
+
+                }, false);
 
 
                 var pointerlockChange = function (event) {
@@ -312,7 +312,7 @@ function initTHREEjs() {
         stats.domElement.style.MozUserSelect = "none";
         container.appendChild(stats.domElement);
 
-        
+
         clock = new THREE.Clock();
 
         textureLoader = new THREE.TextureLoader();
@@ -342,7 +342,6 @@ function initTHREEjs() {
 
         pathTracingScene.add(cameraControlsObject);
 
-        
         // setup render targets...
         pathTracingRenderTarget = new THREE.WebGLRenderTarget((window.innerWidth * pixelRatio), (window.innerHeight * pixelRatio), {
                 minFilter: THREE.NearestFilter,
@@ -373,6 +372,9 @@ function initTHREEjs() {
         // this full-screen quad mesh performs the path tracing operations and produces a screen-sized image
         pathTracingGeometry = new THREE.PlaneBufferGeometry(2, 2);
         initPathTracingShaders();
+
+        // add objects for physical simulation
+        createPhysicsObjects();
 
         // this full-screen quad mesh copies the image output of the pathtracing shader and feeds it back in to that shader as a 'previousTexture'
         screenTextureGeometry = new THREE.PlaneBufferGeometry(2, 2);

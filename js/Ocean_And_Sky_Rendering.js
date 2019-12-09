@@ -60,28 +60,6 @@ function initSceneData() {
         shortBoxMesh.position.set(370, 85, -170);
         shortBoxMesh.updateMatrixWorld(true); // 'true' forces immediate matrix update
 
-        /* Add physical sphere into the scene --- */
-
-        var pos = new THREE.Vector3();
-        var quat = new THREE.Quaternion();
-
-        var ballMass = 15;
-        var ballRadius = 90;
-        var sphere_mat = new THREE.MeshBasicMaterial({ color: 0xffffff, refractionRatio: 0.1 });
-        // sphere_mat.envMap.mapping = THREE.CubeRefractionMapping;
-        var ball = new THREE.Mesh(new THREE.SphereBufferGeometry(ballRadius, 20, 20), sphere_mat);
-        ball.castShadow = true;
-        ball.receiveShadow = true;
-
-        var ballShape = new Ammo.btSphereShape(ballRadius);
-        ballShape.setMargin(margin);
-        pos.set(180, 500, -350);
-        quat.set(0, 0, 0, 1);
-        createRigidBody(ball, ballShape, ballMass, pos, quat);
-        ball.userData.physicsBody.setFriction(0.5);
-
-        
-        
         // set camera's field of view
         worldCamera.fov = 60;
         focusDistance = 1180.0;
@@ -106,6 +84,23 @@ function initSceneData() {
 
 // called automatically from within initTHREEjs() function
 function initPathTracingShaders() {
+
+        /* array of vectors */
+        // sphere
+        var vec3Array100 = [];
+        for (let index = 0; index < 100; index++) {
+                vec3Array100.push(new THREE.Vector3());
+        }
+        // box
+        var vec3Array50 = [];
+        for (let index = 0; index < 50; index++) {
+                vec3Array50.push(new THREE.Vector3());
+        }
+        // cylinder
+        var vec3Array60 = [];
+        for (let index = 0; index < 60; index++) {
+                vec3Array60.push(new THREE.Vector3());
+        }
 
         // scene/demo-specific uniforms go here
         pathTracingUniforms = {
@@ -138,7 +133,14 @@ function initPathTracingShaders() {
 
                 uTallBoxInvMatrix: { type: "m4", value: new THREE.Matrix4() },
                 uTallBoxNormalMatrix: { type: "m3", value: new THREE.Matrix3() },
-                uTestHeight: { type: "f", value: 10 }
+                uTestHeight: { type: "f", value: 10 },
+                spheres_v: { type: "v3a", value: vec3Array100 },
+                boxes_v: { type: "v3a", value: vec3Array50 },
+                open_cylinders_v: { type: "v3a", value: vec3Array60 },
+                N_BOXES: {type: "d", value: 2},
+                N_SPHERES: {type: "d", value: 3},
+                N_OPENCYLINDERS: {type: "d", value: 2}
+                
 
         };
 
@@ -154,6 +156,32 @@ function initPathTracingShaders() {
         });
 
 } // end function initPathTracingShaders()
+
+function createPhysicsObjects() {
+        
+        /* Add physical objects into the scene */
+
+        // sphere
+        var pos = new THREE.Vector3();
+        var quat = new THREE.Quaternion();
+
+        var ballMass = 15;
+        var ballRadius = 90;
+        var sphere_mat = new THREE.MeshBasicMaterial({ color: 0xffffff, refractionRatio: 0.1 });
+        // sphere_mat.envMap.mapping = THREE.CubeRefractionMapping;
+        var ball = new THREE.Mesh(new THREE.SphereBufferGeometry(ballRadius, 20, 20), sphere_mat);
+        ball.castShadow = true;
+        ball.receiveShadow = true;
+
+        var ballShape = new Ammo.btSphereShape(ballRadius);
+        ballShape.setMargin(margin);
+        pos.set(180, 500, -350);
+        quat.set(0, 0, 0, 1);
+        createRigidBody(ball, ballShape, ballMass, pos, quat);
+        ball.userData.physicsBody.setFriction(0.5);
+
+        console.log("init objects for physical simulation");
+}
 
 
 // called automatically from within initPathTracingShaders() function above
@@ -226,7 +254,6 @@ function updateVariablesAndUniforms() {
         pathTracingUniforms.uFrameCounter.value = frameCounter;
         pathTracingUniforms.uRandomVector.value.copy(randomVector.set(Math.random(), Math.random(), Math.random()));
         pathTracingUniforms.uTestHeight.value = pathTracingUniforms.uTestHeight.value + 1;
-        console.log(pathTracingUniforms.uTestHeight.value);
 
         //BOXES
         pathTracingUniforms.uTallBoxInvMatrix.value.getInverse(tallBoxMesh.matrixWorld);
