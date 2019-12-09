@@ -930,17 +930,17 @@ void SetupScene( void )
 
 	//set open cylinder
 	for(int i = 0; i < max_open_cylinder_num; i++){
-		openCylinders[i] = OpenCylinder(open_cylinders_v[6 * i].x, open_cylinders_v[6 * i + 1], open_cylinders_v[6 * i + 2], open_cylinders_v[6 * i + 3], open_cylinders_v[6 * i + 4], open_cylinders_v[6 * i + 5].x);
+		openCylinders[i] =OpenCylinder( open_cylinders_v[6 * i].x, open_cylinders_v[6 * i + 1], open_cylinders_v[6 * i + 2], open_cylinders_v[6 * i + 3], open_cylinders_v[6 * i + 4], int(open_cylinders_v[6 * i + 5].x));
 	}
 
 	//set boxes
 	for(int i = 0; i < max_box_num; i++){
-		boxes[i] = Box(boxes_v[5 * i], boxes_v[5 * i + 1], boxes_v[5 * i + 2], boxes_v[5 * i + 3], boxes_v[5 * i + 4].x);
+		boxes[i] = Box(boxes_v[5 * i], boxes_v[5 * i + 1], boxes_v[5 * i + 2], boxes_v[5 * i + 3], int(boxes_v[5 * i + 4].x));
 	}
 
 	//set spheres
 	for(int i = 0; i < max_sphere_num; i++){
-		spheres[i] = Sphere(spheres_v[5 * i].x, spheres_v[5 * i + 1], spheres_v[5 * i + 2], spheres_v[5 * i + 3], spheres_v[5 * i + 4].x);
+		spheres[i] = Sphere(spheres_v[5 * i].x, spheres_v[5 * i + 1], spheres_v[5 * i + 2], spheres_v[5 * i + 3], int(spheres_v[5 * i + 4].x));
 	}
 }
 

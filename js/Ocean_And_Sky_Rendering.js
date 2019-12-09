@@ -88,7 +88,12 @@ function initPathTracingShaders() {
         /* array of vectors */
         // sphere
         var vec3Array100 = [];
-        for (let index = 0; index < 100; index++) {
+        vec3Array100.push(new THREE.Vector3(90.0));
+        vec3Array100.push(new THREE.Vector3(500, 90, 25));
+        vec3Array100.push(new THREE.Vector3(0));
+        vec3Array100.push(new THREE.Vector3(0.8, 0.7, 0.4));
+        vec3Array100.push(new THREE.Vector3(1.0));
+        for (let index = 0; index < 95; index++) {
                 vec3Array100.push(new THREE.Vector3());
         }
         // box
@@ -137,9 +142,9 @@ function initPathTracingShaders() {
                 spheres_v: { type: "v3a", value: vec3Array100 },
                 boxes_v: { type: "v3a", value: vec3Array50 },
                 open_cylinders_v: { type: "v3a", value: vec3Array60 },
-                N_BOXES: {type: "d", value: 2},
-                N_SPHERES: {type: "d", value: 3},
-                N_OPENCYLINDERS: {type: "d", value: 2}
+                N_BOXES: {type: "d", value: 0},
+                N_SPHERES: {type: "d", value: 1},
+                N_OPENCYLINDERS: {type: "d", value: 0}
                 
 
         };
@@ -254,6 +259,7 @@ function updateVariablesAndUniforms() {
         pathTracingUniforms.uFrameCounter.value = frameCounter;
         pathTracingUniforms.uRandomVector.value.copy(randomVector.set(Math.random(), Math.random(), Math.random()));
         pathTracingUniforms.uTestHeight.value = pathTracingUniforms.uTestHeight.value + 1;
+        // console.log(pathTracingUniforms.uTestHeight.value);
 
         //BOXES
         pathTracingUniforms.uTallBoxInvMatrix.value.getInverse(tallBoxMesh.matrixWorld);
