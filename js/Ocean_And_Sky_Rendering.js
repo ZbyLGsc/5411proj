@@ -68,7 +68,7 @@ function initSceneData() {
         var ballMass = 15;
         var ballRadius = 90;
         var sphere_mat = new THREE.MeshBasicMaterial({ color: 0xffffff, refractionRatio: 0.1 });
-        sphere_mat.envMap.mapping = THREE.CubeRefractionMapping;
+        // sphere_mat.envMap.mapping = THREE.CubeRefractionMapping;
         var ball = new THREE.Mesh(new THREE.SphereBufferGeometry(ballRadius, 20, 20), sphere_mat);
         ball.castShadow = true;
         ball.receiveShadow = true;
@@ -137,7 +137,8 @@ function initPathTracingShaders() {
                 uShortBoxNormalMatrix: { type: "m3", value: new THREE.Matrix3() },
 
                 uTallBoxInvMatrix: { type: "m4", value: new THREE.Matrix4() },
-                uTallBoxNormalMatrix: { type: "m3", value: new THREE.Matrix3() }
+                uTallBoxNormalMatrix: { type: "m3", value: new THREE.Matrix3() },
+                uTestHeight: { type: "f", value: 10 }
 
         };
 
@@ -224,6 +225,8 @@ function updateVariablesAndUniforms() {
         pathTracingUniforms.uSampleCounter.value = sampleCounter;
         pathTracingUniforms.uFrameCounter.value = frameCounter;
         pathTracingUniforms.uRandomVector.value.copy(randomVector.set(Math.random(), Math.random(), Math.random()));
+        pathTracingUniforms.uTestHeight.value = pathTracingUniforms.uTestHeight.value + 1;
+        console.log(pathTracingUniforms.uTestHeight.value);
 
         //BOXES
         pathTracingUniforms.uTallBoxInvMatrix.value.getInverse(tallBoxMesh.matrixWorld);
