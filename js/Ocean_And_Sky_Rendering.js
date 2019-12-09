@@ -844,7 +844,7 @@ function throw_ball(){
         ballBody.setLinearVelocity(new Ammo.btVector3(vel.x, vel.y, vel.z));
 
 
-        
+                
 }
 
 // function createMaterial() {

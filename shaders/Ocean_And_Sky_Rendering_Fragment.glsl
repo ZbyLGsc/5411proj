@@ -21,10 +21,10 @@ uniform sampler2D t_PerlinNoise;
 
 #include <pathtracing_skymodel_defines>
 
-#define N_QUADS 4
-#define N_BOXES 2
-#define N_OPENCYLINDERS 4
-#define N_SPHERES 3
+// uniform uint N_QUADS = 4;
+uniform int N_BOXES;
+uniform int N_OPENCYLINDERS;
+uniform int N_SPHERES;
 
 
 //-----------------------------------------------------------------------
@@ -36,10 +36,10 @@ struct Box { vec3 minCorner; vec3 maxCorner; vec3 emission; vec3 color; int type
 struct Sphere { float radius; vec3 position; vec3 emission; vec3 color; int type; };
 struct Intersection { vec3 normal; vec3 emission; vec3 color; vec2 uv; int type; };
 
-OpenCylinder openCylinders[N_OPENCYLINDERS];
+uniform OpenCylinder openCylinders[999];
 // Quad quads[N_QUADS];
-Box boxes[N_BOXES];
-Sphere spheres[N_SPHERES];
+uniform Box boxes[999];
+uniform Sphere spheres[999];
 
 
 #include <pathtracing_random_functions>
@@ -896,6 +896,7 @@ vec3 CalculateRadiance( Ray r, vec3 sunDirection, inout uvec2 seed, inout bool r
 void SetupScene( void )
 //-----------------------------------------------------------------------
 {
+
 	vec3 z  = vec3(0);// No color value, Black
 	
 	// quads[0] = Quad( vec3(  0.0, 0.0,-559.2), vec3(549.6, 0.0,-559.2), vec3(549.6, 548.8,-559.2), vec3(  0.0, 548.8,-559.2),    z, vec3(0.9),  DIFF);// Back Wall
