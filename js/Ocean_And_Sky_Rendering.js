@@ -226,7 +226,7 @@ function updateVariablesAndUniforms() {
         pathTracingUniforms.uFrameCounter.value = frameCounter;
         pathTracingUniforms.uRandomVector.value.copy(randomVector.set(Math.random(), Math.random(), Math.random()));
         pathTracingUniforms.uTestHeight.value = pathTracingUniforms.uTestHeight.value + 1;
-        console.log(pathTracingUniforms.uTestHeight.value);
+        // console.log(pathTracingUniforms.uTestHeight.value);
 
         //BOXES
         pathTracingUniforms.uTallBoxInvMatrix.value.getInverse(tallBoxMesh.matrixWorld);
