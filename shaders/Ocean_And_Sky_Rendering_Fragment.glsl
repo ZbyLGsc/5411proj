@@ -25,6 +25,7 @@ uniform sampler2D t_PerlinNoise;
 #define N_BOXES  2
 #define N_OPENCYLINDERS 4
 #define N_SPHERES 3
+#define N_CONES 3
 
 #define MOVABLE_SPHERE_R 10
 uniform vec3 uMovableSpherePos;
@@ -36,12 +37,14 @@ struct OpenCylinder { float radius; vec3 pos1; vec3 pos2; vec3 emission; vec3 co
 struct Quad { vec3 v0; vec3 v1; vec3 v2; vec3 v3; vec3 emission; vec3 color; int type; };
 struct Box { vec3 minCorner; vec3 maxCorner; vec3 emission; vec3 color; int type; };
 struct Sphere { float radius; vec3 position; vec3 emission; vec3 color; int type; };
+struct Cone { vec3 pos0; float radius0; vec3 pos1; float radius1; vec3 emission; vec3 color; int type; };
 struct Intersection { vec3 normal; vec3 emission; vec3 color; vec2 uv; int type; };
 
 OpenCylinder openCylinders[N_OPENCYLINDERS];
 Quad quads[N_QUADS];
 Box boxes[N_BOXES];
 Sphere spheres[N_SPHERES+1];
+Cone cones[N_CONES];
 
 
 #include <pathtracing_random_functions>
@@ -55,6 +58,8 @@ Sphere spheres[N_SPHERES+1];
 #include <pathtracing_triangle_intersect>
 
 #include <pathtracing_box_intersect>
+
+#include <pathtracing_cone_intersect>
 
 #include <pathtracing_physical_sky_functions>
 
@@ -387,6 +392,20 @@ float SceneIntersect( Ray r, inout Intersection intersec, bool checkOcean )
 		intersec.emission = boxes[1].emission;
 		intersec.color = boxes[1].color;
 		intersec.type = boxes[1].type;
+	}
+	
+
+	for (int i = 0; i < N_CONES; i++)
+	{
+		d = ConeIntersect( cones[i].pos0, cones[i].radius0, cones[i].pos1, cones[i].radius1, r, normal );
+		if (d < t)
+		{
+			t = d;
+			intersec.normal = normalize(normal);
+			intersec.emission = cones[i].emission;
+			intersec.color = cones[i].color;
+			intersec.type = cones[i].type;
+		}
 	}
 	
 	
@@ -908,20 +927,25 @@ void SetupScene( void )
 	//quads[3] = Quad( vec3(  0.0, 548.8,-559.2), vec3(549.6, 548.8,-559.2), vec3(549.6, 548.8,   0.0), vec3(0.0, 548.8, 0.0),  z, vec3(0.9),  DIFF);// Ceiling
 	quads[3] = Quad( vec3(1000, -10.0,-3000), vec3(1000, -10.0,-100), vec3(1000, 500.0, -100), vec3(1000, 500.0, -3000),    z, vec3(0.9), DIFF);// Floor
 	
-	openCylinders[0] = OpenCylinder( 50.0, vec3(50 , 0, -50), vec3(50 ,-1000, -50), z, vec3(0.05, 0.0, 0.0), WOOD);// wooden support OpenCylinder
-	openCylinders[1] = OpenCylinder( 50.0, vec3(500, 0, -50), vec3(500,-1000, -50), z, vec3(0.05, 0.0, 0.0), WOOD);// wooden support OpenCylinder
-	openCylinders[2] = OpenCylinder( 50.0, vec3(50 , 0,-510), vec3(50 ,-1000,-510), z, vec3(0.05, 0.0, 0.0), WOOD);// wooden support OpenCylinder
-	openCylinders[3] = OpenCylinder( 50.0, vec3(500, 0,-510), vec3(500,-1000,-510), z, vec3(0.05, 0.0, 0.0), WOOD);// wooden support OpenCylinder
+	openCylinders[0] = OpenCylinder( 50.0, vec3(-400 , 500, -1800), vec3(-400 ,-10, -1800), z, vec3(0.05, 1.0, 1.0), SPEC);// wooden support OpenCylinder
+	openCylinders[1] = OpenCylinder( 50.0, vec3(0, 500, -1500), vec3(0,-10, -1500), z, vec3(1.0, 0.3, 0.1), SPEC);// wooden support OpenCylinder
+	openCylinders[2] = OpenCylinder( 50.0, vec3(50 , 500,-700), vec3(50 ,-10,-700), z, vec3(0.05, 0.0, 0.0), WOOD);// wooden support OpenCylinder
+	openCylinders[3] = OpenCylinder( 50.0, vec3(500, 500,-700), vec3(500,-10,-700), z, vec3(0.05, 0.0, 0.0), WOOD);// wooden support OpenCylinder
 	
 	boxes[0] = Box( vec3( -82.0,-170.0, -80.0), vec3(  82.0, 170.0,   80.0), z, vec3(1.0), SPEC);// Tall Mirror Box Left
 	boxes[1] = Box( vec3( -86.0, -85.0, -80.0), vec3(  86.0,  85.0,   80.0), z, vec3(0.9), DIFF);// Short Diffuse Box Right
 
-	spheres[0] = Sphere(90.0, vec3( 500, 90, 25), z, vec3(0.8, 0.7, 0.4), DIFF);// White Ball
-	spheres[1] = Sphere(90.0, vec3(-500, 90, 0),   z, vec3(0.9, 0.4, 0.0), REFR);// Yellow Ball
-	spheres[2] = Sphere(90.0, vec3( 50, 90, 0), z, vec3(0.25, 0.0, 0.0), DIFF);// Red Ball
+	spheres[0] = Sphere(50.0, vec3( 500, 240, -2000), z, vec3(0.8, 0.7, 0.4), DIFF);// White Ball
+	spheres[1] = Sphere(100.0, vec3(-400, 190, -1000),   z, vec3(0.2, 0.4, 1.0), REFR);// Yellow Ball
+	spheres[2] = Sphere(70.0, vec3( -700, 100, -300), z, vec3(0.25, 0.0, 0.0), WOOD);// Red Ball
 
 	//set spheres
 	spheres[N_SPHERES] = Sphere(90.0, uMovableSpherePos, z, vec3(0.7, 0.7, 0.2), SPEC);
+
+	cones[0] = Cone( vec3(-500,500,-2300), 150.0, vec3(-500, 220,-2300), 0.0, z, vec3(1.0,0.1,0.2), REFR);//blue Cone
+	cones[1] = Cone( vec3(500,50,-1200), 400.0, vec3(500, 300,-1200), 0.0, z, vec3(0.01,0.1,0.5), DIFF);//blue Cone
+	cones[2] = Cone( vec3(600,400,-2700), 150.0, vec3(600,280,-2700), 0.0, z, vec3(0.01,0.1,0.5), REFR);//blue Cone
+	
 }
 
 
