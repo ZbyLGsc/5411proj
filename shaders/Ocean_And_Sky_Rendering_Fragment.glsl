@@ -343,7 +343,7 @@ float SceneIntersect( Ray r, inout Intersection intersec, bool checkOcean )
 		}
         }
 
-	for (int i = 0; i < N_SPHERES + int(uMovableSpherePos.z > -1000.0 ) ; i++)
+	for (int i = 0; i < N_SPHERES + int(uMovableSpherePos.y > -1000.0 ) ; i++)
         {
 		d = SphereIntersect( spheres[i].radius, spheres[i].position, r );
 		if (d < t)
