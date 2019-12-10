@@ -135,7 +135,7 @@ function initPhysics() {
   solver = new Ammo.btSequentialImpulseConstraintSolver();
   softBodySolver = new Ammo.btDefaultSoftBodySolver();
   physicsWorld = new Ammo.btSoftRigidDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration, softBodySolver);
-  physicsWorld.setGravity(new Ammo.btVector3(0, gravityConstant*300, 0));
+  physicsWorld.setGravity(new Ammo.btVector3(0, gravityConstant * 300, 0));
   physicsWorld.getWorldInfo().set_m_gravity(new Ammo.btVector3(0, gravityConstant, 0));
 
   transformAux1 = new Ammo.btTransform();
@@ -173,17 +173,23 @@ function createObjects() {
 
   // boxes of the glsl's boxes
   var box0 = createParalellepiped(164, 340, 160, 0, new THREE.Vector3(180, 170, -350), new THREE.Quaternion(0, Math.sin(Math.PI * 0.1), 0, Math.cos(Math.PI * 0.1)), baseMaterialYel);
-  var box1 = createParalellepiped(172, 170, 160, 0, new THREE.Vector3(370, 85, -170), new THREE.Quaternion(0, Math.sin(-Math.PI * 0.05), 0, Math.cos(-Math.PI * 0.05)), baseMaterialGreen);
+  var box1 = createParalellepiped(172, 170, 160, 0, new THREE.Vector3(0, 300, -2500), new THREE.Quaternion(0, Math.sin(-Math.PI * 0.05), 0, Math.cos(-Math.PI * 0.05)), baseMaterialGreen);
 
   // spheres
-  var sphere0 = createSphere(90, 0, new THREE.Vector3(500, 90, 25), quat, baseMaterialRed);
-  var sphere1 = createSphere(90, 0, new THREE.Vector3(-500, 90, 0), quat, baseMaterialGreen);
-  var sphere2 = createSphere(90, 0, new THREE.Vector3(50, 90, 0), quat, baseMaterialYel);
+  var sphere0 = createSphere(80, 0, new THREE.Vector3(500, 270, -2000), quat, baseMaterialRed);
+  var sphere1 = createSphere(100, 0, new THREE.Vector3(-400, 190, -1000), quat, baseMaterialGreen);
+  var sphere2 = createSphere(70, 0, new THREE.Vector3(-700, 100, -300), quat, baseMaterialYel);
 
-  // cone 
+  // cones 
   var cone0 = createCone(150, 280, 0, new THREE.Vector3(-500, 360, -2300), new THREE.Quaternion(Math.sin(Math.PI * 0.5), 0, 0, Math.cos(Math.PI * 0.5)), baseMaterialRed);
   var cone1 = createCone(400, 250, 0, new THREE.Vector3(500, 175, -1200), quat, baseMaterialRed);
   var cone1 = createCone(150, 120, 0, new THREE.Vector3(600, 340, -2700), new THREE.Quaternion(Math.sin(Math.PI * 0.5), 0, 0, Math.cos(Math.PI * 0.5)), baseMaterialRed);
+
+  // cylinders
+  createCylinder(50.0, 510, 0, new THREE.Vector3(-400, 245, -1800), quat, baseMaterialRed);
+  createCylinder(50.0, 510, 0, new THREE.Vector3(0, 245, -1500), quat, baseMaterialRed);
+  createCylinder(50.0, 510, 0, new THREE.Vector3(50, 245, -700), quat, baseMaterialRed);
+  createCylinder(50.0, 510, 0, new THREE.Vector3(500, 245, -700), quat, baseMaterialRed);
 
   console.log("change5");
 
