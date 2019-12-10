@@ -23,14 +23,15 @@ uniform sampler2D t_PerlinNoise;
 
 #include <pathtracing_skymodel_defines>
 
-#define N_QUADS  4
+#define N_QUADS  5
 #define N_BOXES  2
 #define N_OPENCYLINDERS 4
 #define N_SPHERES 3
 #define N_CONES 3
 
 #define MOVABLE_SPHERE_R 10
-uniform vec3 uMovableSpherePos;
+uniform vec3 uMovableSpherePos1;
+uniform vec3 uMovableSpherePos2;
 
 //-----------------------------------------------------------------------
 
@@ -45,7 +46,7 @@ struct Intersection { vec3 normal; vec3 emission; vec3 color; vec2 uv; int type;
 OpenCylinder openCylinders[N_OPENCYLINDERS];
 Quad quads[N_QUADS];
 Box boxes[N_BOXES];
-Sphere spheres[N_SPHERES+1];
+Sphere spheres[N_SPHERES+2];
 Cone cones[N_CONES];
 
 
@@ -343,9 +344,12 @@ float SceneIntersect( Ray r, inout Intersection intersec, bool checkOcean )
 		}
         }
 
-	int show_shoot = 1;
-	if(uMovableSpherePos.y < -1000.0){
-		show_shoot = 0;
+	int show_shoot = 0;
+	if(uMovableSpherePos1.y > -1000.0){
+		show_shoot ++;
+	}
+	if(uMovableSpherePos2.y > -1000.0){
+		show_shoot ++;
 	}
 
 	for (int i = 0; i < N_SPHERES + show_shoot ; i++)
@@ -869,6 +873,54 @@ vec3 CalculateRadiance( Ray r, vec3 sunDirection, inout uvec2 seed, inout bool r
 			continue;
 			
 		} // end if (intersec.type == REFR)
+
+		if (intersec.type == REFRCEIL)  // Ideal dielectric REFRACTION
+		{
+			nc = 1.0; // IOR of air
+			nt = 1.01; // IOR of ceiling
+			Re = calcFresnelReflectance(r.direction, n, nc, nt, ratioIoR);
+			Tr = 1.0 - Re;
+
+			if (Re > 0.99)
+			{
+				r = Ray( x, reflect(r.direction, nl) ); // reflect ray from surface
+				r.origin += nl * uEPS_intersect;
+				continue;
+			}
+			
+			if (diffuseCount == 0 && !firstTypeWasREFR)
+			{	
+				// save intersection data for future reflection trace
+				firstTypeWasREFR = true;
+				firstMask = mask * Re;
+				firstRay = Ray( x, reflect(r.direction, nl) ); // create reflection ray from surface
+				firstRay.origin += nl * uEPS_intersect;
+				mask *= Tr;
+			}
+			else if (diffuseCount == 0 && rand(seed) < Re)
+			{
+				r = Ray( x, reflect(r.direction, nl) ); // reflect ray from surface
+				r.origin += nl * uEPS_intersect;
+				continue;
+			}
+
+			// transmit ray through surface
+			tdir = refract(r.direction, nl, ratioIoR);
+			r = Ray(x, normalize(tdir));
+			r.origin -= nl * uEPS_intersect;	
+				
+			if (shadowTime)
+			{
+				mask = intersec.color * Tr * 0.2;
+				sampleLight = true; // turn on refracting caustics
+			}
+			else
+				mask *= intersec.color;
+			
+
+			continue;
+			
+		} // end if (intersec.type == REFR)
 		
 		if (intersec.type == WOOD)  // Diffuse object underneath with thin layer of Water on top
 		{
@@ -1038,7 +1090,9 @@ void SetupScene( void )
 	quads[2] = Quad( vec3(-1000, -10.0,-100), vec3(-1000, -10.0, -3000), vec3( -1000, 500.0,-3000), vec3(-1000, 500.0,-100),    z, vec3(0.2, 0.4, 0.36),  DIFF);// left
 	//quads[3] = Quad( vec3(  0.0, 548.8,-559.2), vec3(549.6, 548.8,-559.2), vec3(549.6, 548.8,   0.0), vec3(0.0, 548.8, 0.0),  z, vec3(0.9),  DIFF);// Ceiling
 	quads[3] = Quad( vec3(1000, -10.0,-3000), vec3(1000, -10.0,-100), vec3(1000, 500.0, -100), vec3(1000, 500.0, -3000),    z, vec3(0.9), DIFF);// Floor
-	
+	quads[4] = Quad( vec3(-1000, 500.0,-100), vec3(1000, 500.0,-100), vec3(1000, 500.0, -3000), vec3(-1000, 500.0, -3000),    z, vec3(1.0), REFRCEIL);// ceiling
+
+
 	openCylinders[0] = OpenCylinder( 50.0, vec3(-400 , 500, -1800), vec3(-400 ,-10, -1800), z, vec3(0.05, 1.0, 1.0), SPEC);// wooden support OpenCylinder
 	openCylinders[1] = OpenCylinder( 50.0, vec3(0, 500, -1500), vec3(0,-10, -1500), z, vec3(1.0, 0.3, 0.1), SPEC);// wooden support OpenCylinder
 	openCylinders[2] = OpenCylinder( 50.0, vec3(50 , 500,-700), vec3(50 ,-10,-700), z, vec3(0.05, 0.0, 0.0), WOOD);// wooden support OpenCylinder
@@ -1052,7 +1106,8 @@ void SetupScene( void )
 	spheres[2] = Sphere(70.0, vec3( -700, 100, -300), z, vec3(0.25, 0.0, 0.0), WOOD);// Red Ball
 
 	//set spheres
-	spheres[N_SPHERES] = Sphere(90.0, uMovableSpherePos, z, vec3(0.7, 0.7, 0.2), SPEC);
+	spheres[N_SPHERES] = Sphere(90.0, uMovableSpherePos1, z, vec3(0.7, 0.7, 0.2), REFR);
+	spheres[N_SPHERES+1] = Sphere(90.0, uMovableSpherePos2, z, vec3(0.7, 0.7, 0.2), REFR);
 
 	cones[0] = Cone( vec3(-500,500,-2300), 150.0, vec3(-500, 220,-2300), 0.0, z, vec3(1.0,0.1,0.2), REFR);//blue Cone
 	cones[1] = Cone( vec3(500,50,-1200), 400.0, vec3(500, 300,-1200), 0.0, z, vec3(0.01,0.1,0.5), DIFF);//blue Cone
