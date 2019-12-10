@@ -353,13 +353,10 @@ float SceneIntersect( Ray r, inout Intersection intersec, bool checkOcean )
 			intersec.normal = normalize((r.origin + r.direction * t) - spheres[i].position);
 			intersec.emission = spheres[i].emission;
 			intersec.color = spheres[i].color;
-			// intersec.roughness = spheres[i].roughness;
 			intersec.type = spheres[i].type;
 		}
         }
 	
-	// TALL MIRROR BOX
-	// transform ray into Tall Box's object space
 	rObj.origin = vec3( uTallBoxInvMatrix * vec4(r.origin, 1.0) );
 	rObj.direction = vec3( uTallBoxInvMatrix * vec4(r.direction, 0.0) );
 	d = BoxIntersect( boxes[0].minCorner, boxes[0].maxCorner, rObj, normal );
@@ -367,8 +364,6 @@ float SceneIntersect( Ray r, inout Intersection intersec, bool checkOcean )
 	if (d < t)
 	{	
 		t = d;
-		
-		// transfom normal back into world space
 		normal = normalize(normal);
 		normal = vec3(uTallBoxNormalMatrix * normal);
 		intersec.normal = normalize(normal);
@@ -378,8 +373,6 @@ float SceneIntersect( Ray r, inout Intersection intersec, bool checkOcean )
 	}
 	
 	
-	// SHORT DIFFUSE WHITE BOX
-	// transform ray into Short Box's object space
 	rObj.origin = vec3( uShortBoxInvMatrix * vec4(r.origin, 1.0) );
 	rObj.direction = vec3( uShortBoxInvMatrix * vec4(r.direction, 0.0) );
 	d = BoxIntersect( boxes[1].minCorner, boxes[1].maxCorner, rObj, normal );
@@ -387,8 +380,6 @@ float SceneIntersect( Ray r, inout Intersection intersec, bool checkOcean )
 	if (d < t)
 	{	
 		t = d;
-		
-		// transfom normal back into world space
 		normal = normalize(normal);
 		normal = vec3(uShortBoxNormalMatrix * normal);
 		intersec.normal = normalize(normal);
@@ -1180,8 +1171,8 @@ void main( void )
         }
 	else
 	{
-                previousColor *= 0.98; // motion-blur trail amount (old image)
-                pixelColor *= 0.02; // brightness of new image (noisy)
+                previousColor *= 0.97; // motion-blur trail amount (old image)
+                pixelColor *= 0.03; // brightness of new image (noisy)
         }
 	
         out_FragColor = vec4( pixelColor + previousColor, rayHitIsDynamic? 1.0 : 0.0 );	
