@@ -138,7 +138,7 @@ function initPathTracingShaders() {
 // called automatically from within initPathTracingShaders() function above
 function createPathTracingMaterial() {
 
-        fileLoader.load('shaders/Ocean_And_Sky_Rendering_Fragment.glsl', function (shaderText) {
+        fileLoader.load('shaders/PathTracing_Rendering_Fragment.glsl', function (shaderText) {
 
                 pathTracingFragmentShader = shaderText;
 
