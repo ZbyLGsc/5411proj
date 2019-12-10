@@ -4,6 +4,8 @@ precision highp float;
 precision highp int;
 precision highp sampler2D;
 
+#define BOUNCE_NUM 20
+
 uniform float uCameraUnderWater;
 uniform vec3 uSunDirection;
 
@@ -454,7 +456,7 @@ float SceneIntersect( Ray r, inout Intersection intersec, bool checkOcean )
 		intersec.normal = normalize(vec3(dx,dy,dz));
 		intersec.emission = vec3(0);
 		intersec.color = vec3(0.6, 1.0, 1.0);
-		intersec.type = REFR;
+		intersec.type = REFRSEA;
 	}
 	
 	
@@ -509,7 +511,7 @@ vec3 CalculateRadiance( Ray r, vec3 sunDirection, inout uvec2 seed, inout bool r
 	bool shadowTime = false;
 	
 	
-        for (int bounces = 0; bounces < 5; bounces++)
+        for (int bounces = 0; bounces < BOUNCE_NUM; bounces++)
 	{
 
 		t = SceneIntersect(r, intersec, checkOcean);
@@ -765,12 +767,60 @@ vec3 CalculateRadiance( Ray r, vec3 sunDirection, inout uvec2 seed, inout bool r
 			continue;
                 }
 		
-		if (intersec.type == REFR)  // Ideal dielectric REFRACTION
+		if (intersec.type == REFRSEA)  // Ideal dielectric REFRACTION
 		{
 			checkOcean = false;
 			
 			nc = 1.0; // IOR of air
 			nt = 1.33; // IOR of water
+			Re = calcFresnelReflectance(r.direction, n, nc, nt, ratioIoR);
+			Tr = 1.0 - Re;
+
+			if (Re > 0.99)
+			{
+				r = Ray( x, reflect(r.direction, nl) ); // reflect ray from surface
+				r.origin += nl * uEPS_intersect;
+				continue;
+			}
+			
+			if (diffuseCount == 0 && !firstTypeWasREFR)
+			{	
+				// save intersection data for future reflection trace
+				firstTypeWasREFR = true;
+				firstMask = mask * Re;
+				firstRay = Ray( x, reflect(r.direction, nl) ); // create reflection ray from surface
+				firstRay.origin += nl * uEPS_intersect;
+				mask *= Tr;
+			}
+			else if (diffuseCount == 0 && rand(seed) < Re)
+			{
+				r = Ray( x, reflect(r.direction, nl) ); // reflect ray from surface
+				r.origin += nl * uEPS_intersect;
+				continue;
+			}
+
+			// transmit ray through surface
+			tdir = refract(r.direction, nl, ratioIoR);
+			r = Ray(x, normalize(tdir));
+			r.origin -= nl * uEPS_intersect;	
+				
+			if (shadowTime)
+			{
+				mask = intersec.color * Tr * 0.2;
+				sampleLight = true; // turn on refracting caustics
+			}
+			else
+				mask *= intersec.color;
+			
+
+			continue;
+			
+		} // end if (intersec.type == REFRSEA)
+
+		if (intersec.type == REFR)  // Ideal dielectric REFRACTION
+		{
+			nc = 1.0; // IOR of air
+			nt = 1.5; // IOR of glass
 			Re = calcFresnelReflectance(r.direction, n, nc, nt, ratioIoR);
 			Tr = 1.0 - Re;
 
@@ -878,9 +928,66 @@ vec3 CalculateRadiance( Ray r, vec3 sunDirection, inout uvec2 seed, inout bool r
 			
 		} //end if (intersec.type == WOOD)
 
+		if (intersec.type == COAT)  // Diffuse object underneath with ClearCoat on top
+		{
+			nc = 1.0; // IOR of Air
+			nt = 1.4; // IOR of Clear Coat
+			Re = calcFresnelReflectance(r.direction, n, nc, nt, ratioIoR);
+			Tr = 1.0 - Re;
+
+			if (Re > 0.99)
+			{
+				r = Ray( x, reflect(r.direction, nl) ); // reflect ray from surface
+				r.origin += nl * uEPS_intersect;
+				continue;
+			}
+
+			// clearCoat counts as refractive surface
+			if (bounces == 0)
+			{	
+				// save intersection data for future reflection trace
+				firstTypeWasREFR = true;
+				firstMask = mask * Re;
+				firstRay = Ray( x, reflect(r.direction, nl) ); // create reflection ray from surface
+				firstRay.origin += nl * uEPS_intersect;
+				mask *= Tr;
+			}
+			else if (diffuseCount == 0 && rand(seed) < Re)
+			{
+				r = Ray( x, reflect(r.direction, nl) ); // reflect ray from surface
+				r.origin += nl * uEPS_intersect;
+				continue;
+			}
+
+			diffuseCount++;
+
+			mask *= intersec.color;
+
+			bounceIsSpecular = false;
+			
+			if (diffuseCount == 1 && rand(seed) < diffuseColorBleeding)
+                        {
+                                // choose random Diffuse sample vector
+				r = Ray( x, normalize(randomCosWeightedDirectionInHemisphere(nl, seed)) );
+				r.origin += nl * uEPS_intersect;
+				continue;
+                        }
+
+			r = Ray( x, normalize(sunDirection) );// create shadow ray pointed towards light
+			// r.direction = normalize(randomDirectionInSpecularLobe(r.direction, 0.02, seed ));
+			r.origin += nl * uEPS_intersect;
+
+			weight = max(0.0, dot(r.direction, nl)) * 0.005; // down-weight directSunLight contribution
+			mask *= weight * cloudShadowFactor;
+
+			sampleLight = true;
+			continue;
+			
+		} //end if (intersec.type == COAT)
+
 		
 		
-	} // end for (int bounces = 0; bounces < 5; bounces++)
+	} // end for (int bounces = 0; bounces < BOUNCE_NUM; bounces++)
 	
 
 	// atmospheric haze effect (aerial perspective)
@@ -935,8 +1042,8 @@ void SetupScene( void )
 	boxes[0] = Box( vec3( -82.0,-170.0, -80.0), vec3(  82.0, 170.0,   80.0), z, vec3(1.0), SPEC);// Tall Mirror Box Left
 	boxes[1] = Box( vec3( -86.0, -85.0, -80.0), vec3(  86.0,  85.0,   80.0), z, vec3(0.9), DIFF);// Short Diffuse Box Right
 
-	spheres[0] = Sphere(50.0, vec3( 500, 240, -2000), z, vec3(0.8, 0.7, 0.4), DIFF);// White Ball
-	spheres[1] = Sphere(100.0, vec3(-400, 190, -1000),   z, vec3(0.2, 0.4, 1.0), REFR);// Yellow Ball
+	spheres[0] = Sphere(80.0, vec3( 500, 270, -2000), z, vec3(0.8, 0.7, 0.4), DIFF);// White Ball
+	spheres[1] = Sphere(100.0, vec3(-400, 190, -1000),   z, vec3(1.0, 1.0, 1.0), REFR);// Yellow Ball
 	spheres[2] = Sphere(70.0, vec3( -700, 100, -300), z, vec3(0.25, 0.0, 0.0), WOOD);// Red Ball
 
 	//set spheres
@@ -944,7 +1051,7 @@ void SetupScene( void )
 
 	cones[0] = Cone( vec3(-500,500,-2300), 150.0, vec3(-500, 220,-2300), 0.0, z, vec3(1.0,0.1,0.2), REFR);//blue Cone
 	cones[1] = Cone( vec3(500,50,-1200), 400.0, vec3(500, 300,-1200), 0.0, z, vec3(0.01,0.1,0.5), DIFF);//blue Cone
-	cones[2] = Cone( vec3(600,400,-2700), 150.0, vec3(600,280,-2700), 0.0, z, vec3(0.01,0.1,0.5), REFR);//blue Cone
+	cones[2] = Cone( vec3(600,400,-2700), 150.0, vec3(600,280,-2700), 0.0, z, vec3(0.5,0.01,0.5), COAT);//blue Cone
 	
 }
 
@@ -1021,8 +1128,8 @@ void main( void )
         }
 	else
 	{
-                previousColor *= 0.95; // motion-blur trail amount (old image)
-                pixelColor *= 0.05; // brightness of new image (noisy)
+                previousColor *= 0.98; // motion-blur trail amount (old image)
+                pixelColor *= 0.02; // brightness of new image (noisy)
         }
 	
         out_FragColor = vec4( pixelColor + previousColor, rayHitIsDynamic? 1.0 : 0.0 );	
