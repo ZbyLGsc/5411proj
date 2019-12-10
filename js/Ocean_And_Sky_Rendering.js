@@ -8,7 +8,7 @@ var tallBoxGeometry, tallBoxMaterial, tallBoxMesh;
 var shortBoxGeometry, shortBoxMaterial, shortBoxMesh;
 
 // Physics variables
-var gravityConstant = - 9.8;
+var gravityConstant = - 980;
 var collisionConfiguration;
 var dispatcher;
 var broadphase;
@@ -312,7 +312,8 @@ function createRigidBody(object, physicsShape, mass, pos, quat, vel, angVel) {
         physicsShape.calculateLocalInertia(mass, localInertia);
         var rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, physicsShape, localInertia);
         var body = new Ammo.btRigidBody(rbInfo);
-        body.setFriction(0.5);
+        body.setFriction(0.0);
+        body.setRestitution(0.8);
 
         if (vel) {
                 body.setLinearVelocity(new Ammo.btVector3(vel.x, vel.y, vel.z));
@@ -372,38 +373,38 @@ function createPhysicsObjects() {
         // shooting
         window.addEventListener('mousedown', function (event) {
 
-                // triggered by right button
-                if (event.which != 3) {
-                        return;
+                var cur_height = pathTracingUniforms.uMovableSpherePos.value.y;
+                if (cur_height < -100) {
+                        // triggered by right button
+                        if (event.which != 1) {
+                                return;
+                        }
+                        mouseCoords.set(
+                                (event.clientX / window.innerWidth) * 2 - 1,
+                                - (event.clientY / window.innerHeight) * 2 + 1
+                        );
+                        raycaster.setFromCamera(mouseCoords, worldCamera);
+
+                        // Creates a ball and throws it
+                        var ballMass = 35;
+                        var ballRadius = 40;
+                        var ball = new THREE.Mesh(new THREE.SphereBufferGeometry(ballRadius, 14, 10), new THREE.MeshPhongMaterial({ color: 0x202020 }));
+                        var ballShape = new Ammo.btSphereShape(ballRadius);
+                        ballShape.setMargin(margin);
+
+                        var pos = new THREE.Vector3();
+                        var quat = new THREE.Quaternion();
+                        pos.copy(raycaster.ray.direction);
+                        pos.add(raycaster.ray.origin);
+                        quat.set(0, 0, 0, 1);
+                        var ballBody = createRigidBody(ball, ballShape, ballMass, pos, quat);
+                        var vel = new THREE.Vector3();
+                        vel.copy(raycaster.ray.direction);
+                        vel.multiplyScalar(5000);
+                        ballBody.setLinearVelocity(new Ammo.btVector3(vel.x, vel.y, vel.z));
+
+                        console.log("change9");
                 }
-                mouseCoords.set(
-                        (event.clientX / window.innerWidth) * 2 - 1,
-                        - (event.clientY / window.innerHeight) * 2 + 1
-                );
-
-                raycaster.setFromCamera(mouseCoords, worldCamera);
-
-                // Creates a ball and throws it
-                var ballMass = 35;
-                var ballRadius = 40;
-                var ball = new THREE.Mesh(new THREE.SphereBufferGeometry(ballRadius, 14, 10), new THREE.MeshPhongMaterial({ color: 0x202020 }));
-                var ballShape = new Ammo.btSphereShape(ballRadius);
-                ballShape.setMargin(margin);
-
-                var pos = new THREE.Vector3();
-                var quat = new THREE.Quaternion();
-                pos.copy(raycaster.ray.direction);
-                pos.add(raycaster.ray.origin);
-                quat.set(0, 0, 0, 1);
-                var ballBody = createRigidBody(ball, ballShape, ballMass, pos, quat);
-                var vel = new THREE.Vector3();
-                vel.copy(raycaster.ray.direction);
-                vel.multiplyScalar(5000);
-                ballBody.setLinearVelocity(new Ammo.btVector3(vel.x, vel.y, vel.z));
-
-                console.log("change8");
-
-
         }, false);
 
 }
@@ -425,8 +426,6 @@ function updatePhysics(deltaTime) {
                         objThree.position.set(p.x(), p.y(), p.z());
                         objThree.quaternion.set(q.x(), q.y(), q.z(), q.w());
                         if (i === il - 1) {
-                                // pathTracingUniforms.uMovableSpherePos.value.set(new THREE.Vector3(p.x(), p.y(), p.z()));
-                                // console.log(pathTracingUniforms.uMovableSpherePos.value.x, ", ", pathTracingUniforms.uMovableSpherePos.value.y, ", ", pathTracingUniforms.uMovableSpherePos.value.z);1
                                 pathTracingUniforms.uMovableSpherePos.value.x = p.x();
                                 pathTracingUniforms.uMovableSpherePos.value.y = p.y();
                                 pathTracingUniforms.uMovableSpherePos.value.z = p.z();
