@@ -40,7 +40,6 @@ var cameraJustStartedMoving = false;
 var cameraRecentlyMoving = false;
 var isPaused = true;
 var oldYawRotation, oldPitchRotation;
-var mobileJoystickControls = null;
 var oldDeltaX = 0,
         oldDeltaY = 0;
 var newDeltaX = 0,
@@ -183,97 +182,6 @@ function onWindowResize(event) {
 function init() {
 
         window.addEventListener('resize', onWindowResize, false);
-
-        if ('ontouchstart' in window) {
-                mouseControl = false;
-
-                mobileJoystickControls = new MobileJoystickControls({
-                        //showJoystick: true,
-                        enableMultiTouch: true
-                });
-        }
-
-        // if on mobile device, unpause the app because there is no ESC key and no mouse capture to do
-        if (!mouseControl)
-                isPaused = false;
-
-        if (mouseControl) {
-
-                window.addEventListener('wheel', onMouseWheel, false);
-
-                document.body.addEventListener("click", function () {
-                        this.requestPointerLock = this.requestPointerLock || this.mozRequestPointerLock;
-                        this.requestPointerLock();
-                }, false);
-
-                window.addEventListener("click", function (event) {
-                        event.preventDefault();
-                }, false);
-                window.addEventListener("dblclick", function (event) {
-                        event.preventDefault();
-                }, false);
-
-                // TODO: throw balls
-                window.addEventListener('mousedown', function (event) {
-
-                        // triggered by right button
-                        if (event.which != 3) {
-                                return;
-                        }
-                        mouseCoords.set(
-                                (event.clientX / window.innerWidth) * 2 - 1,
-                                - (event.clientY / window.innerHeight) * 2 + 1
-                        );
-
-                        raycaster.setFromCamera(mouseCoords, worldCamera);
-
-                        throw_ball();
-
-                }, false);
-
-
-                var pointerlockChange = function (event) {
-
-                        if (document.pointerLockElement === document.body ||
-                                document.mozPointerLockElement === document.body || document.webkitPointerLockElement === document.body) {
-
-                                isPaused = false;
-
-                        } else {
-
-                                isPaused = true;
-
-                        }
-
-                };
-
-                // Hook pointer lock state change events
-                document.addEventListener('pointerlockchange', pointerlockChange, false);
-                document.addEventListener('mozpointerlockchange', pointerlockChange, false);
-                document.addEventListener('webkitpointerlockchange', pointerlockChange, false);
-
-        }
-
-        /*
-        // Fullscreen API
-        document.addEventListener("click", function() {
-        	
-        	if ( !document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement ) {
-
-        		if (document.documentElement.requestFullscreen) {
-        			document.documentElement.requestFullscreen();
-        			
-        		} else if (document.documentElement.mozRequestFullScreen) {
-        			document.documentElement.mozRequestFullScreen();
-        		
-        		} else if (document.documentElement.webkitRequestFullscreen) {
-        			document.documentElement.webkitRequestFullscreen();
-        		
-        		}
-
-        	}
-        });
-        */
 
         initTHREEjs(); // boilerplate: init necessary three.js items and scene/demo-specific objects
 

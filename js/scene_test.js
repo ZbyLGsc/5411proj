@@ -172,8 +172,8 @@ function createObjects() {
   var right = createParalellepiped(20, 510, 3100, 0, new THREE.Vector3(1000, 245, -3000 * 0.5), quat, baseMaterialYel);
 
   // boxes of the glsl's boxes
-  var box0 = createParalellepiped(164, 340, 160, 0, pos, quat, baseMaterialYel);
-  var box1 = createParalellepiped(172, 170, 160, 0, pos, quat, baseMaterialGreen);
+  var box0 = createParalellepiped(164, 340, 160, 0, new THREE.Vector3(180, 170, -350), new THREE.Quaternion(0, Math.sin(Math.PI * 0.1), 0, Math.cos(Math.PI * 0.1)), baseMaterialYel);
+  var box1 = createParalellepiped(172, 170, 160, 0, new THREE.Vector3(370, 85, -170), new THREE.Quaternion(0, Math.sin(-Math.PI * 0.05), 0, Math.cos(-Math.PI * 0.05)), baseMaterialGreen);
 
   // spheres
   var sphere0 = createSphere(90, 0, new THREE.Vector3(500, 90, 25), quat, baseMaterialRed);
