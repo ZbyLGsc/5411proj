@@ -135,7 +135,7 @@ function initPhysics() {
   solver = new Ammo.btSequentialImpulseConstraintSolver();
   softBodySolver = new Ammo.btDefaultSoftBodySolver();
   physicsWorld = new Ammo.btSoftRigidDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration, softBodySolver);
-  physicsWorld.setGravity(new Ammo.btVector3(0, gravityConstant, 0));
+  physicsWorld.setGravity(new Ammo.btVector3(0, gravityConstant*300, 0));
   physicsWorld.getWorldInfo().set_m_gravity(new Ammo.btVector3(0, gravityConstant, 0));
 
   transformAux1 = new Ammo.btTransform();
@@ -180,7 +180,12 @@ function createObjects() {
   var sphere1 = createSphere(90, 0, new THREE.Vector3(-500, 90, 0), quat, baseMaterialGreen);
   var sphere2 = createSphere(90, 0, new THREE.Vector3(50, 90, 0), quat, baseMaterialYel);
 
-  console.log("change4");
+  // cone 
+  var cone0 = createCone(150, 280, 0, new THREE.Vector3(-500, 360, -2300), new THREE.Quaternion(Math.sin(Math.PI * 0.5), 0, 0, Math.cos(Math.PI * 0.5)), baseMaterialRed);
+  var cone1 = createCone(400, 250, 0, new THREE.Vector3(500, 175, -1200), quat, baseMaterialRed);
+  var cone1 = createCone(150, 120, 0, new THREE.Vector3(600, 340, -2700), new THREE.Quaternion(Math.sin(Math.PI * 0.5), 0, 0, Math.cos(Math.PI * 0.5)), baseMaterialRed);
+
+  console.log("change5");
 
 }
 
@@ -204,7 +209,7 @@ function createSphere(radius, mass, pos, quat, material) {
   return threeObject;
 }
 
-function createCone(radius, height, pos, quat, material) {
+function createCone(radius, height, mass, pos, quat, material) {
   var threeObject = new THREE.Mesh(new THREE.ConeBufferGeometry(radius, height, 20, 2), material);
   var shape = new Ammo.btConeShape(radius, height);
   shape.setMargin(margin);
@@ -212,7 +217,7 @@ function createCone(radius, height, pos, quat, material) {
   return threeObject;
 }
 
-function createCylinder(radius, height, pos, quat, material) {
+function createCylinder(radius, height, mass, pos, quat, material) {
   var threeObject = new THREE.Mesh(new THREE.CylinderBufferGeometry(radius, radius, height, 20, 1), material);
   var shape = new Ammo.btCylinderShape(new Ammo.btVector3(radius, height * 0.5, radius));
   shape.setMargin(margin);
@@ -370,7 +375,7 @@ function initInput() {
 
     // Creates a ball and throws it
     var ballMass = 35;
-    var ballRadius = 0.4;
+    var ballRadius = 40;
 
     var ball = new THREE.Mesh(new THREE.SphereBufferGeometry(ballRadius, 14, 10), ballMaterial);
     ball.castShadow = true;
@@ -387,7 +392,7 @@ function initInput() {
 
     var vel = new THREE.Vector3();
     vel.copy(raycaster.ray.direction);
-    vel.multiplyScalar(50);
+    vel.multiplyScalar(5000);
     ballBody.setLinearVelocity(new Ammo.btVector3(vel.x, vel.y, vel.z));
 
   }, false);
