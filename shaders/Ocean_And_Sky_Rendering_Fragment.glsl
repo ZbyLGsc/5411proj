@@ -21,7 +21,7 @@ uniform sampler2D t_PerlinNoise;
 
 #include <pathtracing_skymodel_defines>
 
-// uniform uint N_QUADS = 4;
+#define N_QUADS  4
 #define N_BOXES  2
 #define N_OPENCYLINDERS 4
 #define N_SPHERES 3
@@ -39,7 +39,7 @@ struct Sphere { float radius; vec3 position; vec3 emission; vec3 color; int type
 struct Intersection { vec3 normal; vec3 emission; vec3 color; vec2 uv; int type; };
 
 OpenCylinder openCylinders[N_OPENCYLINDERS];
-// Quad quads[N_QUADS];
+Quad quads[N_QUADS];
 Box boxes[N_BOXES];
 Sphere spheres[N_SPHERES+1];
 
@@ -310,18 +310,18 @@ float SceneIntersect( Ray r, inout Intersection intersec, bool checkOcean )
 		intersec.type = SEAFLOOR;
 	}
 	
-	// for (int i = 0; i < N_QUADS; i++)
-    //     {
-	// 	d = QuadIntersect( quads[i].v0, quads[i].v1, quads[i].v2, quads[i].v3, r );
-	// 	if (d < t && d > 0.0)
-	// 	{
-	// 		t = d;
-	// 		intersec.normal = normalize( cross(quads[i].v1 - quads[i].v0, quads[i].v2 - quads[i].v0) );
-	// 		intersec.emission = quads[i].emission;
-	// 		intersec.color = quads[i].color;
-	// 		intersec.type = quads[i].type;
-	// 	}
-    //     }
+	for (int i = 0; i < N_QUADS; i++)
+        {
+		d = QuadIntersect( quads[i].v0, quads[i].v1, quads[i].v2, quads[i].v3, r );
+		if (d < t && d > 0.0)
+		{
+			t = d;
+			intersec.normal = normalize( cross(quads[i].v1 - quads[i].v0, quads[i].v2 - quads[i].v0) );
+			intersec.emission = quads[i].emission;
+			intersec.color = quads[i].color;
+			intersec.type = quads[i].type;
+		}
+        }
 	
 	for (int i = 0; i < N_OPENCYLINDERS; i++)
         {
@@ -902,11 +902,11 @@ void SetupScene( void )
 
 	vec3 z  = vec3(0);// No color value, Black
 	
-	// quads[0] = Quad( vec3(  0.0, 0.0,-559.2), vec3(549.6, 0.0,-559.2), vec3(549.6, 548.8,-559.2), vec3(  0.0, 548.8,-559.2),    z, vec3(0.9),  DIFF);// Back Wall
-	// quads[1] = Quad( vec3(  0.0, 0.0,   0.0), vec3(  0.0, 0.0,-559.2), vec3(  0.0, 548.8,-559.2), vec3(  0.0, 548.8,   0.0),    z, vec3(0.7, 0.12,0.05),  DIFF);// Left Wall Red
-	// quads[2] = Quad( vec3(549.6, 0.0,-559.2), vec3(549.6, 0.0,   0.0), vec3(549.6, 548.8,   0.0), vec3(549.6, 548.8,-559.2),    z, vec3(0.2, 0.4, 0.36),  DIFF);// Right Wall Green
-	// //quads[3] = Quad( vec3(  0.0, 548.8,-559.2), vec3(549.6, 548.8,-559.2), vec3(549.6, 548.8,   0.0), vec3(0.0, 548.8, 0.0),  z, vec3(0.9),  DIFF);// Ceiling
-	// quads[3] = Quad( vec3(  0.0, 0.0,   0.0), vec3(549.6, 0.0,   0.0), vec3(549.6, 0.0,-559.2), vec3(  0.0, 0.0,-559.2),    z, vec3(0.9), DIFF);// Floor
+	quads[0] = Quad( vec3(  -1000, -10.0,-100), vec3(1000, -10.0,-100), vec3(1000, 300.0, -3000), vec3(  -1000, 300.0,-3000),    z, vec3(0.7, 0.9,0.0),  DIFF);// bottom
+	quads[1] = Quad( vec3(  -1000, -10.0, -3000), vec3(1000, -10.0,-3000), vec3(1000, 500.0, -3000), vec3( -1000, 500.0,-3000),    z, vec3(0.7, 0.12,0.05),  DIFF);// back
+	quads[2] = Quad( vec3(-1000, -10.0,-100), vec3(-1000, -10.0, -3000), vec3( -1000, 500.0,-3000), vec3(-1000, 500.0,-100),    z, vec3(0.2, 0.4, 0.36),  DIFF);// left
+	//quads[3] = Quad( vec3(  0.0, 548.8,-559.2), vec3(549.6, 548.8,-559.2), vec3(549.6, 548.8,   0.0), vec3(0.0, 548.8, 0.0),  z, vec3(0.9),  DIFF);// Ceiling
+	quads[3] = Quad( vec3(1000, -10.0,-3000), vec3(1000, -10.0,-100), vec3(1000, 500.0, -100), vec3(1000, 500.0, -3000),    z, vec3(0.9), DIFF);// Floor
 	
 	openCylinders[0] = OpenCylinder( 50.0, vec3(50 , 0, -50), vec3(50 ,-1000, -50), z, vec3(0.05, 0.0, 0.0), WOOD);// wooden support OpenCylinder
 	openCylinders[1] = OpenCylinder( 50.0, vec3(500, 0, -50), vec3(500,-1000, -50), z, vec3(0.05, 0.0, 0.0), WOOD);// wooden support OpenCylinder
