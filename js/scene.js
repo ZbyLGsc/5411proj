@@ -72,7 +72,8 @@ function initGraphics() {
   backgroundTexture = new THREE.CubeTextureLoader().load(urls);
   scene.background = backgroundTexture;
 
-  camera.position.set(-30, 20, 6);
+  camera.position.set(0, 20, -30);
+  console.log("change1")
 
   renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(window.devicePixelRatio);

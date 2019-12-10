@@ -137,31 +137,6 @@ function initPathTracingShaders() {
 
 } // end function initPathTracingShaders()
 
-function createPhysicsObjects() {
-        
-        /* Add physical objects into the scene */
-
-        // sphere
-        var pos = new THREE.Vector3();
-        var quat = new THREE.Quaternion();
-
-        var ballMass = 15;
-        var ballRadius = 90;
-        var sphere_mat = new THREE.MeshBasicMaterial({ color: 0xffffff, refractionRatio: 0.1 });
-        // sphere_mat.envMap.mapping = THREE.CubeRefractionMapping;
-        var ball = new THREE.Mesh(new THREE.SphereBufferGeometry(ballRadius, 20, 20), sphere_mat);
-        ball.castShadow = true;
-        ball.receiveShadow = true;
-
-        var ballShape = new Ammo.btSphereShape(ballRadius);
-        ballShape.setMargin(margin);
-        pos.set(180, 500, -350);
-        quat.set(0, 0, 0, 1);
-        createRigidBody(ball, ballShape, ballMass, pos, quat);
-        ball.userData.physicsBody.setFriction(0.5);
-
-        console.log("init objects for physical simulation");
-}
 
 
 // called automatically from within initPathTracingShaders() function above
@@ -388,6 +363,35 @@ function throw_ball() {
 
 
 
+}
+
+function createPhysicsObjects() {
+        
+        /* Add physical objects into the scene */
+        var pos = new THREE.Vector3();
+        var quat = new THREE.Quaternion();
+        var baseMaterial = new THREE.MeshPhongMaterial({ color: 0x606060 });
+
+        // boxes of green slope, 
+        var slope = createParalellepiped(40, 6, 0.5, 0, new THREE.Vector3(0, 0, -20), quat, baseMaterial);
+
+
+        // sphere
+
+        var ballMass = 15;
+        var ballRadius = 90;
+        var sphere_mat = new THREE.MeshBasicMaterial({ color: 0xffffff, refractionRatio: 0.1 });
+        // sphere_mat.envMap.mapping = THREE.CubeRefractionMapping;
+        var ball = new THREE.Mesh(new THREE.SphereBufferGeometry(ballRadius, 20, 20), sphere_mat);
+
+        var ballShape = new Ammo.btSphereShape(ballRadius);
+        ballShape.setMargin(margin);
+        pos.set(180, 500, -350);
+        quat.set(0, 0, 0, 1);
+        createRigidBody(ball, ballShape, ballMass, pos, quat);
+        ball.userData.physicsBody.setFriction(0.5);
+
+        console.log("init objects for physical simulation");
 }
 
 
