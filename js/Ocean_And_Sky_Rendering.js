@@ -17,12 +17,9 @@ var softBodySolver;
 var physicsWorld;
 var rigidBodies = [];
 var margin = 0.05;
-var hinge;
-var rope;
-var cloth;
 var transformAux1;
-
-var armMovement = 0;
+var shootSphere1;
+var shootSphere2;
 
 // called automatically from within initTHREEjs() function
 function initSceneData() {
@@ -118,7 +115,8 @@ function initPathTracingShaders() {
 
                 uTallBoxInvMatrix: { type: "m4", value: new THREE.Matrix4() },
                 uTallBoxNormalMatrix: { type: "m3", value: new THREE.Matrix3() },
-                uMovableSpherePos: { type: "v3", value: new THREE.Vector3(0.0, -2000.0, -500.0) }
+                uMovableSpherePos1: { type: "v3", value: new THREE.Vector3(0.0, -2000.0, -500.0) },
+                uMovableSpherePos2: { type: "v3", value: new THREE.Vector3(0.0, -2000.0, -500.0) }
                 // uMovableSpherePos: { type: "v3", value: new THREE.Vector3(0.0, 200.0, -500.0) }
         };
 
@@ -313,7 +311,7 @@ function createRigidBody(object, physicsShape, mass, pos, quat, vel, angVel) {
         var rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, physicsShape, localInertia);
         var body = new Ammo.btRigidBody(rbInfo);
         body.setFriction(0.0);
-        body.setRestitution(0.8);
+        body.setRestitution(0.9);
 
         if (vel) {
                 body.setLinearVelocity(new Ammo.btVector3(vel.x, vel.y, vel.z));
@@ -349,6 +347,7 @@ function createPhysicsObjects() {
         var back = createParalellepiped(2000, 510, 20, 0, new THREE.Vector3(0, 245, -3000), quat, baseMaterialYel);
         var left = createParalellepiped(20, 510, 3100, 0, new THREE.Vector3(-1000, 245, -3000 * 0.5), quat, baseMaterialYel);
         var right = createParalellepiped(20, 510, 3100, 0, new THREE.Vector3(1000, 245, -3000 * 0.5), quat, baseMaterialYel);
+        var top = createParalellepiped(3000, 20, 3500, 0, new THREE.Vector3(0, 500, -3100 * 0.5), quat, baseMaterialRed);
 
         // boxes of the glsl's boxes
         var box0 = createParalellepiped(164, 340, 160, 0, new THREE.Vector3(180, 170, -350), new THREE.Quaternion(0, Math.sin(Math.PI * 0.1), 0, Math.cos(Math.PI * 0.1)), baseMaterialYel);
@@ -370,41 +369,98 @@ function createPhysicsObjects() {
         createCylinder(50.0, 510, 0, new THREE.Vector3(50, 245, -700), quat, baseMaterialRed);
         createCylinder(50.0, 510, 0, new THREE.Vector3(500, 245, -700), quat, baseMaterialRed);
 
-        // shooting
+        // allocate two spheres for shooting
+        shootSphere1 = createSphere(40, 35, new THREE.Vector3(0, -2000, 0), quat, baseMaterialRed);
+        shootSphere2 = createSphere(40, 35, new THREE.Vector3(0, -2000, 0), quat, baseMaterialRed);
+
         window.addEventListener('mousedown', function (event) {
 
-                var cur_height = pathTracingUniforms.uMovableSpherePos.value.y;
-                if (cur_height < -100) {
-                        // triggered by right button
-                        if (event.which != 1) {
-                                return;
-                        }
-                        mouseCoords.set(
-                                (event.clientX / window.innerWidth) * 2 - 1,
-                                - (event.clientY / window.innerHeight) * 2 + 1
-                        );
-                        raycaster.setFromCamera(mouseCoords, worldCamera);
+                // var cur_height = pathTracingUniforms.uMovableSpherePos.value.y;
+                // if (cur_height < -100) {
+                //         // triggered by right button
+                //         if (event.which != 1) {
+                //                 return;
+                //         }
+                //         mouseCoords.set(
+                //                 (event.clientX / window.innerWidth) * 2 - 1,
+                //                 - (event.clientY / window.innerHeight) * 2 + 1
+                //         );
+                //         raycaster.setFromCamera(mouseCoords, worldCamera);
 
-                        // Creates a ball and throws it
-                        var ballMass = 35;
-                        var ballRadius = 40;
-                        var ball = new THREE.Mesh(new THREE.SphereBufferGeometry(ballRadius, 14, 10), new THREE.MeshPhongMaterial({ color: 0x202020 }));
-                        var ballShape = new Ammo.btSphereShape(ballRadius);
-                        ballShape.setMargin(margin);
+                //         // Creates a ball and throws it
+                //         var ballMass = 35;
+                //         var ballRadius = 40;
+                //         var ball = new THREE.Mesh(new THREE.SphereBufferGeometry(ballRadius, 14, 10), new THREE.MeshPhongMaterial({ color: 0x202020 }));
+                //         var ballShape = new Ammo.btSphereShape(ballRadius);
+                //         ballShape.setMargin(margin);
 
-                        var pos = new THREE.Vector3();
-                        var quat = new THREE.Quaternion();
-                        pos.copy(raycaster.ray.direction);
-                        pos.add(raycaster.ray.origin);
-                        quat.set(0, 0, 0, 1);
-                        var ballBody = createRigidBody(ball, ballShape, ballMass, pos, quat);
-                        var vel = new THREE.Vector3();
-                        vel.copy(raycaster.ray.direction);
-                        vel.multiplyScalar(5000);
-                        ballBody.setLinearVelocity(new Ammo.btVector3(vel.x, vel.y, vel.z));
+                //         var pos = new THREE.Vector3();
+                //         var quat = new THREE.Quaternion();
+                //         pos.copy(raycaster.ray.direction);
+                //         pos.add(raycaster.ray.origin);
+                //         quat.set(0, 0, 0, 1);
+                //         var ballBody = createRigidBody(ball, ballShape, ballMass, pos, quat);
+                //         var vel = new THREE.Vector3();
+                //         vel.copy(raycaster.ray.direction);
+                //         vel.multiplyScalar(3000);
+                //         ballBody.setLinearVelocity(new Ammo.btVector3(vel.x, vel.y, vel.z));
 
-                        console.log("change9");
+                //         console.log("change9");
+                // }
+
+                // get the shooting direction and velocity
+                if (event.which != 1) {
+                        return;
                 }
+                mouseCoords.set(
+                        (event.clientX / window.innerWidth) * 2 - 1,
+                        - (event.clientY / window.innerHeight) * 2 + 1
+                );
+                raycaster.setFromCamera(mouseCoords, worldCamera);
+                var pos = new THREE.Vector3();
+                var quat = new THREE.Quaternion();
+                pos.copy(raycaster.ray.direction);
+                pos.add(raycaster.ray.origin);
+                var vel = new THREE.Vector3();
+                vel.copy(raycaster.ray.direction);
+                vel.multiplyScalar(3000);
+
+                var spherePhys1 = shootSphere1.userData.physicsBody;
+                var ms = spherePhys1.getMotionState();
+                if (ms) {
+                        ms.getWorldTransform(transformAux1);
+                        var p = transformAux1.getOrigin();
+                        if (p.y() < -100) {
+                                var transform = new Ammo.btTransform();
+                                transform.setIdentity();
+                                transform.setOrigin(new Ammo.btVector3(pos.x, pos.y, pos.z));
+                                transform.setRotation(new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w));
+                                var motionState = new Ammo.btDefaultMotionState(transform);
+                                spherePhys1.setMotionState(motionState);
+                                spherePhys1.setLinearVelocity(new Ammo.btVector3(vel.x, vel.y, vel.z));
+                                shootSphere1.userData.physicsBody = spherePhys1;
+                        } else {
+                                var spherePhys2 = shootSphere2.userData.physicsBody;
+                                ms = spherePhys2.getMotionState();
+                                if (ms) {
+                                        ms.getWorldTransform(transformAux1);
+                                        p = transformAux1.getOrigin();
+                                        if (p.y() < -100) {
+                                                var transform = new Ammo.btTransform();
+                                                transform.setIdentity();
+                                                transform.setOrigin(new Ammo.btVector3(pos.x, pos.y, pos.z));
+                                                transform.setRotation(new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w));
+                                                var motionState = new Ammo.btDefaultMotionState(transform);
+                                                spherePhys2.setMotionState(motionState);
+                                                spherePhys2.setLinearVelocity(new Ammo.btVector3(vel.x, vel.y, vel.z));
+                                                shootSphere2.userData.physicsBody = spherePhys2;
+                                        }
+                                }
+                        }
+                }
+
+
+
         }, false);
 
 }
@@ -425,11 +481,31 @@ function updatePhysics(deltaTime) {
                         var q = transformAux1.getRotation();
                         objThree.position.set(p.x(), p.y(), p.z());
                         objThree.quaternion.set(q.x(), q.y(), q.z(), q.w());
-                        if (i === il - 1) {
+                        if (i >= il - 1) {
                                 pathTracingUniforms.uMovableSpherePos.value.x = p.x();
                                 pathTracingUniforms.uMovableSpherePos.value.y = p.y();
                                 pathTracingUniforms.uMovableSpherePos.value.z = p.z();
                         }
                 }
+        }
+
+        var objPhys = shootSphere1.userData.physicsBody;
+        var ms = objPhys.getMotionState();
+        if (ms) {
+                ms.getWorldTransform(transformAux1);
+                var p = transformAux1.getOrigin();
+                pathTracingUniforms.uMovableSpherePos1.value.x = p.x();
+                pathTracingUniforms.uMovableSpherePos1.value.y = p.y();
+                pathTracingUniforms.uMovableSpherePos1.value.z = p.z();
+        }
+
+        objPhys = shootSphere2.userData.physicsBody;
+        ms = objPhys.getMotionState();
+        if (ms) {
+                ms.getWorldTransform(transformAux1);
+                var p = transformAux1.getOrigin();
+                pathTracingUniforms.uMovableSpherePos2.value.x = p.x();
+                pathTracingUniforms.uMovableSpherePos2.value.y = p.y();
+                pathTracingUniforms.uMovableSpherePos2.value.z = p.z();
         }
 }
