@@ -391,20 +391,16 @@ function animate() {
                         cameraIsMoving = true;
                 }
                 if ((keyboard.pressed('up') || button5Pressed) && !(keyboard.pressed('down') || button6Pressed)) {
-
-                        increaseFocusDist = true;
+                        cameraControlsPitchObject.rotation.x += 0.003;
                 }
                 if ((keyboard.pressed('down') || button6Pressed) && !(keyboard.pressed('up') || button5Pressed)) {
-
-                        decreaseFocusDist = true;
+                        cameraControlsPitchObject.rotation.x -= 0.003;
                 }
                 if (keyboard.pressed('right') && !keyboard.pressed('left')) {
-
-                        increaseAperture = true;
+                        cameraControlsYawObject.rotation.y -= 0.003;
                 }
                 if (keyboard.pressed('left') && !keyboard.pressed('right')) {
-
-                        decreaseAperture = true;
+                        cameraControlsYawObject.rotation.y += 0.003;
                 }
 
                 if (increaseFOV) {
