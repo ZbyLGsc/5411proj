@@ -13,6 +13,8 @@ uniform mat4 uShortBoxInvMatrix;
 uniform mat3 uShortBoxNormalMatrix;
 uniform mat4 uTallBoxInvMatrix;
 uniform mat3 uTallBoxNormalMatrix;
+uniform mat4 uCeilInvMatrix;
+uniform mat3 uCeilNormalMatrix;
 
 #include <pathtracing_uniforms_and_defines>
 
@@ -23,8 +25,8 @@ uniform sampler2D t_PerlinNoise;
 
 #include <pathtracing_skymodel_defines>
 
-#define N_QUADS  5
-#define N_BOXES  2
+#define N_QUADS  4
+#define N_BOXES  3
 #define N_OPENCYLINDERS 4
 #define N_SPHERES 3
 #define N_CONES 3
@@ -386,6 +388,21 @@ float SceneIntersect( Ray r, inout Intersection intersec, bool checkOcean )
 		intersec.emission = boxes[1].emission;
 		intersec.color = boxes[1].color;
 		intersec.type = boxes[1].type;
+	}
+
+	rObj.origin = vec3( uCeilInvMatrix * vec4(r.origin, 1.0) );
+	rObj.direction = vec3( uCeilNormalMatrix * vec4(r.direction, 0.0) );
+	d = BoxIntersect( boxes[1].minCorner, boxes[1].maxCorner, rObj, normal );
+	
+	if (d < t)
+	{	
+		t = d;
+		normal = normalize(normal);
+		normal = vec3(uCeilNormalMatrix * normal);
+		intersec.normal = normalize(normal);
+		intersec.emission = boxes[2].emission;
+		intersec.color = boxes[2].color;
+		intersec.type = boxes[2].type;
 	}
 	
 
@@ -871,16 +888,7 @@ vec3 CalculateRadiance( Ray r, vec3 sunDirection, inout uvec2 seed, inout bool r
 				continue;
 			}
 			
-			if (bounces == 0)
-			{	
-				// save intersection data for future reflection trace
-				firstTypeWasREFR = true;
-				firstMask = mask * Re;
-				firstRay = Ray( x, reflect(r.direction, nl) ); // create reflection ray from surface
-				firstRay.origin += nl * uEPS_intersect;
-				mask *= Tr;
-			}
-			else if (diffuseCount == 0 && !firstTypeWasREFR)
+			if (diffuseCount == 0 && !firstTypeWasREFR)
 			{	
 				// save intersection data for future reflection trace
 				firstTypeWasREFR = true;
@@ -1082,7 +1090,7 @@ void SetupScene( void )
 	quads[2] = Quad( vec3(-1000, -10.0,-100), vec3(-1000, -10.0, -3000), vec3( -1000, 500.0,-3000), vec3(-1000, 500.0,-100),    z, vec3(0.2, 0.4, 0.36),  DIFF);// left
 	//quads[3] = Quad( vec3(  0.0, 548.8,-559.2), vec3(549.6, 548.8,-559.2), vec3(549.6, 548.8,   0.0), vec3(0.0, 548.8, 0.0),  z, vec3(0.9),  DIFF);// Ceiling
 	quads[3] = Quad( vec3(1000, -10.0,-3000), vec3(1000, -10.0,-100), vec3(1000, 500.0, -100), vec3(1000, 500.0, -3000),    z, vec3(0.9), DIFF);// Floor
-	quads[4] = Quad( vec3(-1000, 500.0,-100), vec3(1000, 500.0,-100), vec3(1000, 500.0, -3000), vec3(-1000, 500.0, -3000),    z, vec3(1.0), REFRCEIL);// ceiling
+	// quads[4] = Quad( vec3(-1000, 500.0,-100), vec3(1000, 500.0,-100), vec3(1000, 500.0, -3000), vec3(-1000, 500.0, -3000),    z, vec3(1.0), REFRCEIL);// ceiling
 
 
 	openCylinders[0] = OpenCylinder( 50.0, vec3(-400 , 500, -1800), vec3(-400 ,-10, -1800), z, vec3(0.05, 1.0, 1.0), SPEC);// wooden support OpenCylinder
@@ -1092,6 +1100,7 @@ void SetupScene( void )
 	
 	boxes[0] = Box( vec3( -82.0,-170.0, -80.0), vec3(  82.0, 170.0,   80.0), z, vec3(1.0), SPEC);// Tall Mirror Box Left
 	boxes[1] = Box( vec3( -86.0, -85.0, -80.0), vec3(  86.0,  85.0,   80.0), z, vec3(0.9), DIFF);// Short Diffuse Box Right
+	boxes[2] = Box( vec3(-1000, -10.0,-1550), vec3( 1000, 10.0, 1550), z, vec3(1.0), REFRCEIL);// Short Diffuse Box Right
 
 	spheres[0] = Sphere(80.0, vec3( 500, 270, -2000), z, vec3(0.8, 0.7, 0.4), DIFF);// White Ball
 	spheres[1] = Sphere(100.0, vec3(-400, 190, -1000),   z, vec3(1.0, 1.0, 1.0), REFR);// Yellow Ball
