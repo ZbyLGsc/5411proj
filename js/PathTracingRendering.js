@@ -6,6 +6,7 @@ var sunAngle = 0;
 var sunDirection = new THREE.Vector3();
 var tallBoxGeometry, tallBoxMaterial, tallBoxMesh;
 var shortBoxGeometry, shortBoxMaterial, shortBoxMesh;
+var topBoxGeometry, topBoxMaterial, topBoxMesh;
 
 // Physics variables
 var gravityConstant = - 980;
@@ -30,32 +31,35 @@ function initSceneData() {
         /* Boxes that needed by the pathTracingScene */
         tallBoxGeometry = new THREE.BoxGeometry(1, 1, 1);
         tallBoxMaterial = new THREE.MeshPhysicalMaterial({
-                color: new THREE.Color(0.95, 0.95, 0.95), //RGB, ranging from 0.0 - 1.0
-                roughness: 1.0 // ideal Diffuse material	
+                color: new THREE.Color(0.95, 0.95, 0.95), roughness: 1.0
         });
-
         tallBoxMesh = new THREE.Mesh(tallBoxGeometry, tallBoxMaterial);
         pathTracingScene.add(tallBoxMesh);
-        tallBoxMesh.visible = true; // disable normal Three.js rendering updates of this object: 
-        // it is just a data placeholder as well as an Object3D that can be transformed/manipulated by 
-        // using familiar Three.js library commands. It is then fed into the GPU path tracing renderer
-        // through its 'matrixWorld' matrix. See below:
+        tallBoxMesh.visible = true;
         tallBoxMesh.rotation.set(0, Math.PI * 0.1, 0);
         tallBoxMesh.position.set(180, 170, -350);
-        tallBoxMesh.updateMatrixWorld(true); // 'true' forces immediate matrix update
+        tallBoxMesh.updateMatrixWorld(true);
 
         shortBoxGeometry = new THREE.BoxGeometry(1, 1, 1);
         shortBoxMaterial = new THREE.MeshPhysicalMaterial({
-                color: new THREE.Color(0.95, 0.95, 0.95), //RGB, ranging from 0.0 - 1.0
-                roughness: 1.0 // ideal Diffuse material	
+                color: new THREE.Color(0.95, 0.95, 0.95), roughness: 1.0
         });
-
         shortBoxMesh = new THREE.Mesh(shortBoxGeometry, shortBoxMaterial);
         pathTracingScene.add(shortBoxMesh);
         shortBoxMesh.visible = false;
         shortBoxMesh.rotation.set(0, -Math.PI * 0.09, 0);
         shortBoxMesh.position.set(0, 300, -2500);
-        shortBoxMesh.updateMatrixWorld(true); // 'true' forces immediate matrix update
+        shortBoxMesh.updateMatrixWorld(true);
+
+        topBoxGeometry = new THREE.BoxGeometry(2000, 20, 3100);
+        topBoxMaterial = new THREE.MeshPhysicalMaterial({
+                color: new THREE.Color(0.95, 0.95, 0.95), roughness: 1.0
+        });
+        topBoxMesh = new THREE.Mesh(topBoxGeometry, topBoxMaterial);
+        pathTracingScene.add(topBoxMesh);
+        topBoxMesh.visible = false;
+        topBoxMesh.position.set(0, 500, -3100 * 0.5);
+        topBoxMesh.updateMatrixWorld(true);
 
         // set camera's field of view
         worldCamera.fov = 60;
@@ -115,6 +119,7 @@ function initPathTracingShaders() {
 
                 uTallBoxInvMatrix: { type: "m4", value: new THREE.Matrix4() },
                 uTallBoxNormalMatrix: { type: "m3", value: new THREE.Matrix3() },
+                
                 uMovableSpherePos1: { type: "v3", value: new THREE.Vector3(0.0, -2000.0, -500.0) },
                 uMovableSpherePos2: { type: "v3", value: new THREE.Vector3(0.0, -2000.0, -500.0) }
                 // uMovableSpherePos: { type: "v3", value: new THREE.Vector3(0.0, 200.0, -500.0) }
