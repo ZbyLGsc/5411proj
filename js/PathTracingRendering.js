@@ -220,7 +220,7 @@ function updateVariablesAndUniforms() {
         pathTracingUniforms.uCameraMatrix.value.copy(worldCamera.matrixWorld);
         screenOutputMaterial.uniforms.uOneOverSampleCounter.value = 1.0 / sampleCounter;
 
-        cameraInfoElement.innerHTML = "FOV: " + worldCamera.fov + " / Aperture: " + apertureSize.toFixed(2) + " / FocusDistance: " + focusDistance + "<br>" + "Samples: " + sampleCounter;
+        // cameraInfoElement.innerHTML = "FOV: " + worldCamera.fov + " / Aperture: " + apertureSize.toFixed(2) + " / FocusDistance: " + focusDistance + "<br>" + "Samples: " + sampleCounter;
 
 } // end function updateUniforms()
 
