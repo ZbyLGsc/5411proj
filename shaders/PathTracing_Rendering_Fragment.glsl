@@ -860,7 +860,7 @@ vec3 CalculateRadiance( Ray r, vec3 sunDirection, inout uvec2 seed, inout bool r
 		if (intersec.type == REFRCEIL)  // Ideal dielectric REFRACTION
 		{
 			nc = 1.0; // IOR of air
-			nt = 1.01; // IOR of ceiling
+			nt = 1.005; // IOR of ceiling
 			Re = calcFresnelReflectance(r.direction, n, nc, nt, ratioIoR);
 			Tr = 1.0 - Re;
 
@@ -871,7 +871,16 @@ vec3 CalculateRadiance( Ray r, vec3 sunDirection, inout uvec2 seed, inout bool r
 				continue;
 			}
 			
-			if (diffuseCount == 0 && !firstTypeWasREFR)
+			if (bounces == 0)
+			{	
+				// save intersection data for future reflection trace
+				firstTypeWasREFR = true;
+				firstMask = mask * Re;
+				firstRay = Ray( x, reflect(r.direction, nl) ); // create reflection ray from surface
+				firstRay.origin += nl * uEPS_intersect;
+				mask *= Tr;
+			}
+			else if (diffuseCount == 0 && !firstTypeWasREFR)
 			{	
 				// save intersection data for future reflection trace
 				firstTypeWasREFR = true;
@@ -903,7 +912,7 @@ vec3 CalculateRadiance( Ray r, vec3 sunDirection, inout uvec2 seed, inout bool r
 
 			continue;
 			
-		} // end if (intersec.type == REFR)
+		} // end if (intersec.type == REFRCEIL)
 		
 		if (intersec.type == WOOD)  // Diffuse object underneath with thin layer of Water on top
 		{
