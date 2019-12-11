@@ -871,16 +871,7 @@ vec3 CalculateRadiance( Ray r, vec3 sunDirection, inout uvec2 seed, inout bool r
 				continue;
 			}
 			
-			if (bounces == 0)
-			{	
-				// save intersection data for future reflection trace
-				firstTypeWasREFR = true;
-				firstMask = mask * Re;
-				firstRay = Ray( x, reflect(r.direction, nl) ); // create reflection ray from surface
-				firstRay.origin += nl * uEPS_intersect;
-				mask *= Tr;
-			}
-			else if (diffuseCount == 0 && !firstTypeWasREFR)
+			if (diffuseCount == 0 && !firstTypeWasREFR)
 			{	
 				// save intersection data for future reflection trace
 				firstTypeWasREFR = true;
