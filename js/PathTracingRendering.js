@@ -6,7 +6,7 @@ var sunAngle = 0;
 var sunDirection = new THREE.Vector3();
 var tallBoxGeometry, tallBoxMaterial, tallBoxMesh;
 var shortBoxGeometry, shortBoxMaterial, shortBoxMesh;
-var topBoxGeometry, topBoxMaterial, topBoxMesh;
+var ceilBoxGeometry, ceilBoxMaterial, ceilBoxMesh;
 
 // Physics variables
 var gravityConstant = - 980;
@@ -50,16 +50,17 @@ function initSceneData() {
         shortBoxMesh.rotation.set(0, -Math.PI * 0.09, 0);
         shortBoxMesh.position.set(0, 300, -2500);
         shortBoxMesh.updateMatrixWorld(true);
-
-        topBoxGeometry = new THREE.BoxGeometry(2000, 20, 3100);
-        topBoxMaterial = new THREE.MeshPhysicalMaterial({
+        
+        ceilBoxGeometry = new THREE.BoxGeometry(2000, 20, 2900);
+        ceilBoxMaterial = new THREE.MeshPhysicalMaterial({
                 color: new THREE.Color(0.95, 0.95, 0.95), roughness: 1.0
         });
-        topBoxMesh = new THREE.Mesh(topBoxGeometry, topBoxMaterial);
-        pathTracingScene.add(topBoxMesh);
-        topBoxMesh.visible = false;
-        topBoxMesh.position.set(0, 500, -3100 * 0.5);
-        topBoxMesh.updateMatrixWorld(true);
+        ceilBoxMesh = new THREE.Mesh(ceilBoxGeometry, ceilBoxMaterial);
+        pathTracingScene.add(ceilBoxMesh);
+        ceilBoxMesh.visible = false;
+        ceilBoxMesh.position.set(0, 500, -3100 * 0.5);
+        ceilBoxMesh.rotation.set(0, 0, 0);
+        ceilBoxMesh.updateMatrixWorld(true);
 
         // set camera's field of view
         worldCamera.fov = 60;
@@ -119,6 +120,9 @@ function initPathTracingShaders() {
 
                 uTallBoxInvMatrix: { type: "m4", value: new THREE.Matrix4() },
                 uTallBoxNormalMatrix: { type: "m3", value: new THREE.Matrix3() },
+
+                uCeilInvMatrix: { type: "m4", value: new THREE.Matrix4() },
+                uCeilNormalMatrix: { type: "m3", value: new THREE.Matrix3() },
                 
                 uMovableSpherePos1: { type: "v3", value: new THREE.Vector3(0.0, -2000.0, -500.0) },
                 uMovableSpherePos2: { type: "v3", value: new THREE.Vector3(0.0, -2000.0, -500.0) }
@@ -215,6 +219,8 @@ function updateVariablesAndUniforms() {
         pathTracingUniforms.uTallBoxNormalMatrix.value.getNormalMatrix(tallBoxMesh.matrixWorld);
         pathTracingUniforms.uShortBoxInvMatrix.value.getInverse(shortBoxMesh.matrixWorld);
         pathTracingUniforms.uShortBoxNormalMatrix.value.getNormalMatrix(shortBoxMesh.matrixWorld);
+        pathTracingUniforms.uCeilInvMatrix.value.getInverse(ceilBoxMesh.matrixWorld);
+        pathTracingUniforms.uCeilNormalMatrix.value.getNormalMatrix(ceilBoxMesh.matrixWorld);
 
         // CAMERA
         if (cameraControlsObject.position.y < 2.0)

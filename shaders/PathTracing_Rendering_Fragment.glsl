@@ -391,8 +391,8 @@ float SceneIntersect( Ray r, inout Intersection intersec, bool checkOcean )
 	}
 
 	rObj.origin = vec3( uCeilInvMatrix * vec4(r.origin, 1.0) );
-	rObj.direction = vec3( uCeilNormalMatrix * vec4(r.direction, 0.0) );
-	d = BoxIntersect( boxes[1].minCorner, boxes[1].maxCorner, rObj, normal );
+	rObj.direction = vec3( uCeilInvMatrix * vec4(r.direction, 0.0) );
+	d = BoxIntersect( boxes[2].minCorner, boxes[2].maxCorner, rObj, normal );
 	
 	if (d < t)
 	{	
@@ -877,7 +877,7 @@ vec3 CalculateRadiance( Ray r, vec3 sunDirection, inout uvec2 seed, inout bool r
 		if (intersec.type == REFRCEIL)  // Ideal dielectric REFRACTION
 		{
 			nc = 1.0; // IOR of air
-			nt = 1.005; // IOR of ceiling
+			nt = 1.01; // IOR of ceiling
 			Re = calcFresnelReflectance(r.direction, n, nc, nt, ratioIoR);
 			Tr = 1.0 - Re;
 
@@ -1100,7 +1100,7 @@ void SetupScene( void )
 	
 	boxes[0] = Box( vec3( -82.0,-170.0, -80.0), vec3(  82.0, 170.0,   80.0), z, vec3(1.0), SPEC);// Tall Mirror Box Left
 	boxes[1] = Box( vec3( -86.0, -85.0, -80.0), vec3(  86.0,  85.0,   80.0), z, vec3(0.9), DIFF);// Short Diffuse Box Right
-	boxes[2] = Box( vec3(-1000, -10.0,-1550), vec3( 1000, 10.0, 1550), z, vec3(1.0), REFRCEIL);// Short Diffuse Box Right
+	boxes[2] = Box( vec3(-1000, -10.0,-1450), vec3( 1000, 10.0, 1450), z, vec3(1.0), REFRCEIL);// Short Diffuse Box Right
 
 	spheres[0] = Sphere(80.0, vec3( 500, 270, -2000), z, vec3(0.8, 0.7, 0.4), DIFF);// White Ball
 	spheres[1] = Sphere(100.0, vec3(-400, 190, -1000),   z, vec3(1.0, 1.0, 1.0), REFR);// Yellow Ball
